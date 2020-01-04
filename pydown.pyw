@@ -6,6 +6,7 @@ import subprocess
 import time
 import traceback
 import webbrowser
+from os import startfile
 from pathlib import Path
 from queue import Queue
 from threading import Event, Thread
@@ -15,8 +16,6 @@ import pyperclip
 import PySimpleGUI as sg
 import requests
 import urllib3
-
-
 '''
 TODO:
 1. retry
@@ -26,7 +25,6 @@ TODO:
 5. some flexible choose_parser strategy
 6. add more default parse rules
 '''
-
 
 # pip install pyperclip requests[socks] PySimpleGUI
 
@@ -108,9 +106,10 @@ class GUI(object):
     def refresh_table(self):
         tmp = self.table_values
         self.table_values = [[
-            i.meta.title, i.state, i.meta.duration,
+            i.meta.title,
+            i.status.title(), i.meta.duration,
             f'{round(i.current_size/1024/1024, 1)}/{round(i.size/1024/1024, 1)} MB',
-            i.speed, i.timeleft
+            i.speed, i.timeleft, i.state
         ] for i in self.downloader.tasks]
         if tmp != self.table_values:
             self.update('table', self.table_values)
@@ -139,7 +138,7 @@ class GUI(object):
         tasks = []
         indexes = self.window['table'].SelectedRows
         if self.table_values and not indexes:
-            sg.Popup('Please choose at lease one row of this table.')
+            GUI.msg = 'Please choose at lease one row of this table.'
             return tasks
         for index in indexes:
             try:
@@ -155,7 +154,6 @@ class GUI(object):
     def run(self):
         self.refresh_status_bar()
         if not Downloader.check_proxy():
-            print('cao cao ')
             self.window['use_proxy'].Update(value=False, disabled=True)
             self.downloader.session.proxies = None
             self.window.Read(0)
@@ -174,8 +172,9 @@ class GUI(object):
             elif event == 'view_dir':
                 open_dir()
                 continue
-            elif event == 'help':
-                sg.Popup('''
+            elif event in {'help', 'F1:112'}:
+                sg.Popup(
+                    '''
 1. Press `New` button, will load url from Clipboard manually
 2. Press `Pause` button, to pause all downloading tasks
 3. Select some tasks from the table, Press `Delete` button (or press keyboard `Del`) to delete the files created by them
@@ -183,9 +182,8 @@ class GUI(object):
 5. Select `Listen Clipboard`, will auto create task from Clipboard change
 6. Uncheck the `127.0.0.1:1080`, will disable the proxy
 7. `Sub Folder` for saving mp4 files, instead of url netloc as dir name
-8. Double Click tasks of the table, will open url in the webbrowser
-
-''')
+8. Double Click tasks of the table, will open url in the webbrowser if task not ok, will open mp4 player if task ok''',
+                    font=('', 18))
                 continue
             elif event == 'pause':
                 self.switch_pause_download()
@@ -217,9 +215,13 @@ class GUI(object):
         if self._shutdown:
             return
         self.window.Close()
+        del self.window
         self.downloader.shutdown()
         self.clean_downloading_dir()
         self._shutdown = True
+
+    def __del__(self):
+        self.shutdown()
 
     def clean_downloading_dir(self):
         if DOWNLOADING_DIR.is_dir():
@@ -235,13 +237,13 @@ class GUI(object):
             self.global_pause = False
             self.update('pause', ' Pause ')
             for task in self.downloader.tasks:
-                task.working_space.set()
+                task.unpause()
         else:
             # if continue, switch to pause
             self.global_pause = True
             self.update('pause', ' Continue ')
             for task in self.downloader.tasks:
-                task.working_space.clear()
+                task.pause()
 
     def clipboard_listener_loop(self):
         url = pyperclip.paste()
@@ -303,7 +305,7 @@ class GUI(object):
                     pad=(10, 10),
                     key='Exit',
                     auto_size_button=1),
-                sg.Button(' ? ', key='help'),
+                sg.Button(' ? ', key='help', tooltip='`F1` for shortcut.'),
                 sg.Checkbox(
                     'Listen Clipboard',
                     change_submits=1,
@@ -352,8 +354,8 @@ class GUI(object):
                     text_color='black',
                     key='table',
                     headings=[
-                        'Title', 'State', 'Duration', 'Size', 'Speed',
-                        'Timeleft'
+                        'Title', 'Status', 'Duration', 'Size', 'Speed',
+                        'Timeleft', 'Progress'
                     ],
                     header_font=('', 18),
                     auto_size_columns=0,
@@ -362,15 +364,15 @@ class GUI(object):
                     right_click_menu=['', ['&Delete', '&View']],
                     num_rows=999,
                     vertical_scroll_only=0,
-                    tooltip='Select rows, Press `DEL` to delete;'
-                    ' Press `v` to view in browser.',
+                    tooltip='Select rows, Press `DEL` to delete',
                     col_widths=[
                         int(40 / 100 * width * 0.1),
-                        int(15 / 100 * width * 0.1),
+                        int(10 / 100 * width * 0.1),
                         int(13 / 100 * width * 0.1),
                         int(10 / 100 * width * 0.1),
                         int(10 / 100 * width * 0.1),
                         int(12 / 100 * width * 0.1),
+                        int(15 / 100 * width * 0.1),
                     ])
             ],
         ]
@@ -389,7 +391,11 @@ class GUI(object):
     def dbclick_cb(self, event):
         tasks = self.get_selected_tasks()
         for task in tasks:
-            webbrowser.open_new_tab(task.meta.origin)
+            if task.status == 'ok':
+                # open mp4
+                startfile(task.file_path)
+            else:
+                task.switch_pause()
 
 
 class Task(object):
@@ -411,6 +417,20 @@ class Task(object):
         self.working_space = Event()
         self.working_space.set()
 
+    def pause(self):
+        self.working_space.clear()
+        self.status = 'pause'
+
+    def unpause(self):
+        self.working_space.set()
+        self.status = 'downloading'
+
+    def switch_pause(self):
+        if self.status == 'pause':
+            self.unpause()
+        elif self.status in {'todo', 'downloading'}:
+            self.pause()
+
     @staticmethod
     def get_percent(current, total):
         if total:
@@ -430,6 +450,7 @@ class Task(object):
     def download(self):
         if self.file_path.is_file():
             self.state = 'Exist'
+            self.status = 'ok'
             return
         try:
             r = self.session.get(self.meta.url, timeout=(5, None), stream=True)
@@ -489,7 +510,7 @@ class Task(object):
 
     def cancel(self):
         self.status = 'cancel'
-        self.working_space.set()
+        self.unpause()
         self.del_downloading()
 
     def del_downloading(self):
@@ -640,6 +661,7 @@ class Downloader(object):
         parser = self.choose_parser(url)
         # print(parser, 'for', url)
         if not parser:
+            GUI.msg = 'No parser rule matched.'
             return
         try:
             return parser(url)
