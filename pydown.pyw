@@ -1,11 +1,13 @@
 import base64
 import hashlib
+import inspect
 import json
 import re
 import subprocess
 import time
 import traceback
 import webbrowser
+from functools import partial
 from os import startfile
 from pathlib import Path
 from queue import Queue
@@ -58,7 +60,7 @@ WINDOW_BG = '#E0E0E0'
 GLOBAL_BAR_COLOR = ('#76FF03', '#607D8B')
 GLOBAL_BUTTON_COLOR = ('#212121', '#EEEEEE')
 # ===========
-SAVING_DIR = Path(__file__).parent.absolute() / 'mp4'
+SAVING_DIR = Path(__file__).parent.absolute() / 'Downloads'
 if not SAVING_DIR.is_dir():
     SAVING_DIR.mkdir()
 DOWNLOADING_DIR = SAVING_DIR / 'Downloading'
@@ -66,7 +68,7 @@ if not DOWNLOADING_DIR.is_dir():
     DOWNLOADING_DIR.mkdir()
 
 
-def get_screensize(zoom=0.5):
+def get_screensize(zoom=1):
     import ctypes
     user32 = ctypes.windll.user32
     # (2560, 1440)
@@ -74,8 +76,11 @@ def get_screensize(zoom=0.5):
     return list(int(i * zoom) for i in screensize)
 
 
-def open_dir():
-    subprocess.Popen(['explorer.exe', str(SAVING_DIR.absolute())], shell=False)
+def open_dir(path: Path = SAVING_DIR.absolute()):
+    try:
+        subprocess.Popen(['explorer.exe', str(path)], shell=False)
+    except FileNotFoundError as e:
+        GUI.msg = e
 
 
 class GUI(object):
@@ -84,16 +89,23 @@ class GUI(object):
     def __init__(self):
         self.window = None
         self.downloader = Downloader()
-        self.size = get_screensize()
         self.table_values = []
-        self.init_window()
-        self.refresh()
         self.watch_clip = False
         self.global_pause = False
         self._shutdown = False
-        Thread(target=self.refresh_table_loop, daemon=True).start()
-        Thread(target=self.clipboard_listener_loop, daemon=True).start()
-        Thread(target=self.downloader.run, daemon=True).start()
+
+    @property
+    def x(self):
+        return self.run()
+
+    def add_parser(self, url, function):
+        return self.downloader.add_parser(url, function)
+
+    def del_parser(self, url):
+        return self.downloader.del_parser(url)
+
+    def test_parser(self, url):
+        return self.downloader.test_parser(url)
 
     def refresh_proxy(self):
         if not self.window:
@@ -126,10 +138,7 @@ class GUI(object):
             time.sleep(REFRESH_TABLE_INTERVAL)
 
     def refresh_status_bar(self):
-        num = len([
-            i for i in DOWNLOADING_DIR.iterdir()
-            if i.is_file() and i.suffix == '.mp4'
-        ])
+        num = len([i for i in DOWNLOADING_DIR.iterdir() if i.is_file()])
         self.update('status_bar', f"Downloading: {num}. {self.msg}")
 
     def add_task(self, url=None):
@@ -172,7 +181,15 @@ class GUI(object):
             self.window['use_proxy'].Update(value=False)
             PROXY = ''
 
+    def start_daemon_functions(self):
+        Thread(target=self.refresh_table_loop, daemon=True).start()
+        Thread(target=self.clipboard_listener_loop, daemon=True).start()
+        Thread(target=self.downloader.run, daemon=True).start()
+
     def run(self):
+        if not self.window:
+            self.init_window()
+        self.start_daemon_functions()
         self.refresh_status_bar()
         self.check_current_proxy()
         while 1:
@@ -187,7 +204,7 @@ class GUI(object):
                 else:
                     sg.Popup(f'Not support this url: {url}')
                 continue
-            elif event == 'view_dir':
+            elif event == 'view_downloads':
                 open_dir()
                 continue
             elif event in {'help', 'F1:112'}:
@@ -196,11 +213,11 @@ class GUI(object):
 1. Press `New` button, will load url from Clipboard manually
 2. Press `Pause` button, to pause all downloading tasks
 3. Select some tasks from the table, Press `Delete` button (or press keyboard `Del`) to delete the files created by them
-4. Press `Folder` button, to open the folder, only for windows explorer.exe
+4. Press `Downloads` button, to open the folder, only for windows explorer.exe
 5. Select `Listen Clipboard`, will auto create task from Clipboard change
 6. Uncheck the `127.0.0.1:1080`, will disable the proxy
-7. `Sub Folder` for saving mp4 files, instead of url netloc as dir name
-8. Double Click tasks of the table, will open url in the webbrowser if task not ok, will open mp4 player if task ok''',
+7. `Sub Folder` for saving files, instead of url netloc as dir name
+8. Double Click tasks of the table, will open url in the webbrowser if task not ok, will open file if task is ok''',
                     font=('Mono', 18))
                 continue
             elif event == 'pause':
@@ -208,14 +225,13 @@ class GUI(object):
                 continue
             elif event == 'use_proxy':
                 self.check_current_proxy(values['current_proxy'])
-
             elif event == 'watch_clip':
                 if values[event]:
                     WATCH_CLIP.set()
                 else:
                     WATCH_CLIP.clear()
                 continue
-            elif event in {'Delete', 'Delete:46', 'View'}:
+            elif event in {'Delete', 'Delete:46', 'Webview', 'Folder'}:
                 tasks = self.get_selected_tasks()
                 for task in tasks:
                     if 'Delete' in event:
@@ -223,8 +239,10 @@ class GUI(object):
                         task.del_all_files()
                         self.downloader.tasks.remove(task)
                         del task
-                    elif event == 'View':
+                    elif event == 'Webview':
                         webbrowser.open_new_tab(task.meta.origin)
+                    elif event == 'Folder':
+                        open_dir(task.saving_path)
             elif values['current_proxy'] != PROXY:
                 # clear proxy on change
                 self.window['use_proxy'].Update(value=False)
@@ -235,8 +253,9 @@ class GUI(object):
     def shutdown(self):
         if self._shutdown:
             return
-        self.window.Close()
-        del self.window
+        if self.window:
+            self.window.Close()
+            del self.window
         self.downloader.shutdown()
         self.clean_downloading_dir()
         self._shutdown = True
@@ -290,8 +309,9 @@ class GUI(object):
         return path
 
     def init_window(self):
+        half_screen_size = get_screensize(zoom=0.5)
         button_font = ('Mono', 18)
-        width = self.size[0]
+        width = half_screen_size[0]
         self.layouts = [
             [
                 sg.Button(
@@ -314,8 +334,8 @@ class GUI(object):
                     pad=(10, 10),
                     auto_size_button=1),
                 sg.Button(
-                    ' Folder ',
-                    key='view_dir',
+                    ' Downloads ',
+                    key='view_downloads',
                     font=button_font,
                     tooltip=f' Open dir {SAVING_DIR} ',
                     pad=(10, 10),
@@ -390,7 +410,7 @@ class GUI(object):
                     auto_size_columns=0,
                     justification='center',
                     display_row_numbers=True,
-                    right_click_menu=['', ['&Delete', '&View']],
+                    right_click_menu=['', ['&Webview', '&Folder', '&Delete']],
                     num_rows=999,
                     vertical_scroll_only=0,
                     tooltip='Select rows, Press `DEL` to delete',
@@ -408,7 +428,7 @@ class GUI(object):
         self.window = sg.Window(
             f'Downloader ({SAVING_DIR})',
             self.layouts,
-            size=self.size,
+            size=half_screen_size,
             return_keyboard_events=True,
             finalize=1,
             element_padding=(5, 0),
@@ -416,13 +436,17 @@ class GUI(object):
             button_color=GLOBAL_BUTTON_COLOR,
             resizable=1)
         self.window['table'].Widget.bind('<Double-Button-1>', self.dbclick_cb)
+        self.refresh()
 
     def dbclick_cb(self, event):
         tasks = self.get_selected_tasks()
         for task in tasks:
             if task.status == 'ok':
-                # open mp4
-                startfile(task.file_path)
+                # open file
+                try:
+                    startfile(task.file_path)
+                except OSError as e:
+                    GUI.msg = e
             else:
                 task.switch_pause()
 
@@ -430,21 +454,25 @@ class GUI(object):
 class Task(object):
 
     def __init__(self, meta, session, saving_path):
+        self.f = None
+        self.status = 'todo'
+        self.saving_path = saving_path
+        if not self.saving_path.is_dir():
+            self.saving_path.mkdir()
         self.meta = meta
-        if not saving_path.is_dir():
-            saving_path.mkdir()
-        self.file_path: Path = saving_path / meta.file_name
-        self.downloading_file_path: Path = DOWNLOADING_DIR / meta.file_name
+        self.downloading_file_path: Path = DOWNLOADING_DIR / self.meta.file_name
         self.session = session
         self.speed = '0 KB/S'
         self.timeleft = '-'
         self.state = '-'
-        self.status = 'todo'
         self.size = 0
         self.current_size = 0
-        self.f = None
         self.working_space = Event()
         self.working_space.set()
+
+    @property
+    def file_path(self) -> Path:
+        return self.saving_path / self.meta.file_name
 
     def pause(self):
         if self.status in {'todo', 'downloading'}:
@@ -477,31 +505,37 @@ class Task(object):
         num = percent // 10
         return f"{percent: >3}% [{'='*num: <10}]"
 
+    def wait_pause(self, timeout=None):
+        return self.working_space.wait(timeout=timeout)
+
     def download(self):
-        if self.file_path.is_file():
-            self.state = 'Exist'
-            self.status = 'ok'
-            return
         try:
+            self.wait_pause()
             r = self.session.get(self.meta.url, timeout=(5, None), stream=True)
         except requests.RequestException as e:
             GUI.msg = e
             self.state = str(e)
             return
-        content_length = r.headers.get('Content-Length')
-        if content_length:
-            self.size = int(content_length)
-        else:
-            self.timeleft = self.state = '-'
+        if not re.match(r'.*\.\w+$', self.meta.file_name):
+            ext = (r.headers.get('content-type') or 'text/txt').split(
+                ';', 1)[0].split('/')[1] or ''
+            if ext:
+                self.meta.file_name = f'{self.meta.file_name}.{ext}'
+        if self.file_path.is_file():
+            self.state = 'Exist'
+            self.status = 'ok'
+            return
+        self.size = int(r.headers.get('Content-Length') or 0)
         start_ts = time.time()
         start_size = 0
         self.status = 'downloading'
+        self.wait_pause()
         try:
             self.f = open(self.downloading_file_path, 'wb')
             for index, chunk in enumerate(
                     r.iter_content(chunk_size=CHUNK_SIZE), 1):
                 # block for pause button
-                self.working_space.wait()
+                self.wait_pause()
                 if self.status == 'cancel':
                     break
                 if self.f.closed:
@@ -576,11 +610,11 @@ class Task(object):
 class VideoMeta(object):
     __slots__ = ('url', 'title', 'file_name', 'duration', 'origin')
 
-    def __init__(self, url, title, origin, duration=None):
+    def __init__(self, url, origin=None, title=None, duration=None):
         self.url = url
-        self.title = title
         self.origin = origin
-        self.file_name = f'{self.get_safe_file_name(self.title, self.url)}'
+        self.file_name = f'{self.get_safe_file_name(title, self.url)}'
+        self.title = title or self.file_name
         self.duration = self.format_duration(duration)
 
     @staticmethod
@@ -600,11 +634,8 @@ class VideoMeta(object):
 
     @classmethod
     def get_safe_file_name(cls, title, url):
-        safe_title = cls.clean_unsafe_file_name(title)
-        if safe_title:
-            safe_title = f'{safe_title}.mp4'
-        return f'{safe_title}' or cls.get_url_name(
-            url) or f'{cls.get_time_title()}.mp4'
+        safe_title = str(cls.clean_unsafe_file_name(title) or '')
+        return safe_title or cls.get_url_name(url) or f'{cls.get_time_title()}'
 
     @staticmethod
     def get_time_title():
@@ -612,7 +643,9 @@ class VideoMeta(object):
 
     @staticmethod
     def get_url_name(url):
-        return find_one(r'([^/]+?\.mp4)', url)
+        path = urlparse(url).path.strip()
+        name = Path(path).name if path else ''
+        return name
 
     def to_dict(self):
         return {key: getattr(self, key) for key in self.__slots__}
@@ -657,6 +690,26 @@ class Downloader(object):
         self.q = Queue()
 
     @staticmethod
+    def ensure_parser_function(function):
+        args = inspect.getfullargspec(function).args
+        if not (len(args) == 2 and args[0] == 'self'):
+            raise ValueError(
+                'Parser function args should like def function(self, url):')
+
+    def add_parser(self, url, function):
+        self.ensure_parser_function(function)
+        host_md5 = self.get_host_md5(url)
+        self.parse_rules[host_md5] = partial(function, self)
+
+    def del_parser(self, url):
+        host_md5 = self.get_host_md5(url)
+        return self.parse_rules.pop(host_md5, None)
+
+    def test_parser(self, url):
+        """return VideoMeta or None"""
+        return self.get_meta(url)
+
+    @staticmethod
     def get_host_md5(url, n=16):
         m = hashlib.md5()
         host = urlparse(url).netloc
@@ -668,7 +721,8 @@ class Downloader(object):
     def decode(string):
         return base64.b85decode(string.encode('u8')).decode('u8')
 
-    def get_session(self, session=None):
+    @staticmethod
+    def get_session(session=None):
         session = session or requests.Session()
         session.proxies = REQUEST_PROXY
         session.stream = True
@@ -727,7 +781,7 @@ class Downloader(object):
                             scode) or ''
         title = find_one(r"html5player\.setVideoTitle\('(.*?)'\);", scode)
         if url:
-            return VideoMeta(url, title, origin, duration)
+            return VideoMeta(url, origin, title, duration)
 
     def php(self, origin):
         for _ in range(1, 3):
@@ -756,7 +810,7 @@ class Downloader(object):
             ]
             if items:
                 url = items[0]['videoUrl']
-                return VideoMeta(url, title, origin, duration)
+                return VideoMeta(url, origin, title, duration)
 
     def add_queue(self, url, saving_path=SAVING_DIR):
         urls = {i.meta.origin for i in self.tasks}
@@ -793,6 +847,23 @@ class Downloader(object):
         self.shutdown()
 
 
-if __name__ == "__main__":
+def main():
     gui = GUI()
-    gui.run()
+    gui.x
+
+
+def test_new_parser():
+
+    def new_parser(self, url):
+        # r = self.session.get(url)
+        return VideoMeta(url, url)
+
+    gui = GUI()
+    gui.add_parser('http://ip-api.com/json/', new_parser)
+    print(gui.test_parser('http://ip-api.com/json/'))
+    gui.x
+
+
+if __name__ == "__main__":
+    main()
+    # test_new_parser()
