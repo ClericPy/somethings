@@ -1,7 +1,7 @@
 
 ## Background
 
-Store some scripts or snippets written by myself.
+Store some scripts or snippets written by myself. Some GUI apps will build windows exe files.
 
 ## Features
 
