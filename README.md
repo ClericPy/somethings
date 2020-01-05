@@ -12,7 +12,12 @@ https://github.com/ClericPy/somethings/releases
 1. pydown (GUI, exe, pyw)
 
    > Simple downloader GUI for parsing special Websites.
+   >
+   > > pip install pyperclip requests[socks] PySimpleGUI
 
 2. proxy_speed (GUI, exe, pyw)
 
    > Check proxy speed for some cases.
+   >
+   > > pip install torequests pysocks PySimpleGUI
+
