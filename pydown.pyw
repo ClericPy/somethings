@@ -60,7 +60,7 @@ WINDOW_BG = '#E0E0E0'
 GLOBAL_BAR_COLOR = ('#76FF03', '#607D8B')
 GLOBAL_BUTTON_COLOR = ('#212121', '#EEEEEE')
 # ===========
-SAVING_DIR = Path(__file__).parent.absolute() / 'Downloads'
+SAVING_DIR = Path.cwd().absolute() / 'Downloads'
 if not SAVING_DIR.is_dir():
     SAVING_DIR.mkdir()
 DOWNLOADING_DIR = SAVING_DIR / 'Downloading'
@@ -413,7 +413,8 @@ class GUI(object):
                     right_click_menu=['', ['&Webview', '&Folder', '&Delete']],
                     num_rows=999,
                     vertical_scroll_only=0,
-                    tooltip='Select rows, Press `DEL` to delete',
+                    tooltip=
+                    'Press `DEL` to delete, dbclick to open file / pause task.',
                     col_widths=[
                         int(40 / 100 * width * 0.1),
                         int(10 / 100 * width * 0.1),
