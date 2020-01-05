@@ -21,3 +21,11 @@ https://github.com/ClericPy/somethings/releases
    >
    > > pip install torequests pysocks PySimpleGUI
 
+3. PyinstallerUI  (TUI, py, python -m)
+
+   > Terminal UI for PyInstaller.
+   >
+   > 1. pip install pyinstallerui -U
+   >
+   > 2. python -m pyinstallerui
+
