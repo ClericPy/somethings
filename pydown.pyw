@@ -22,7 +22,7 @@ TODO:
 2. restart
 3. resume breakpoint
 4. speed up by concurrent
-5. some flexible choose_parser strategy
+5. some flexible choose_parser strategy, after domain chosen
 6. add more default parse rules
 '''
 
@@ -32,7 +32,7 @@ urllib3.disable_warnings()
 
 WATCH_CLIP = Event()
 WATCH_CLIP.set()
-REFRESH_TABLE_INTERVAL = 2
+REFRESH_TABLE_INTERVAL = 2.5
 CLIPBOARD_LISTENER_INTERVAL = 0.2
 # ===========
 PROXY = '127.0.0.1:1080'
@@ -82,6 +82,7 @@ class GUI(object):
     msg = ''
 
     def __init__(self):
+        self.window = None
         self.downloader = Downloader()
         self.size = get_screensize()
         self.table_values = []
@@ -94,6 +95,10 @@ class GUI(object):
         Thread(target=self.clipboard_listener_loop, daemon=True).start()
         Thread(target=self.downloader.run, daemon=True).start()
 
+    def refresh_proxy(self):
+        if not self.window:
+            return REQUEST_PROXY
+
     def __enter__(self):
         return self
 
@@ -104,6 +109,7 @@ class GUI(object):
         self.window.Read(0)
 
     def refresh_table(self):
+        self.refresh_status_bar()
         tmp = self.table_values
         self.table_values = [[
             i.meta.title,
@@ -113,7 +119,6 @@ class GUI(object):
         ] for i in self.downloader.tasks]
         if tmp != self.table_values:
             self.update('table', self.table_values)
-            self.refresh_status_bar()
 
     def refresh_table_loop(self):
         while 1:
@@ -138,7 +143,7 @@ class GUI(object):
         tasks = []
         indexes = self.window['table'].SelectedRows
         if self.table_values and not indexes:
-            GUI.msg = 'Please choose at lease one row of this table.'
+            GUI.msg = 'Choose at lease one row of this table.'
             return tasks
         for index in indexes:
             try:
@@ -151,12 +156,25 @@ class GUI(object):
                 continue
         return tasks
 
+    def check_current_proxy(self, current_proxy=None):
+        global PROXY
+        if current_proxy is not None:
+            PROXY = current_proxy
+        if PROXY and self.downloader.check_proxy():
+            REQUEST_PROXY.update({
+                'https': f'http://{PROXY}',
+                'http': f'http://{PROXY}'
+            })
+            self.window['current_proxy'].Update(text_color='green')
+        else:
+            REQUEST_PROXY.clear()
+            self.window['current_proxy'].Update(text_color='red')
+            self.window['use_proxy'].Update(value=False)
+            PROXY = ''
+
     def run(self):
         self.refresh_status_bar()
-        if not Downloader.check_proxy():
-            self.window['use_proxy'].Update(value=False, disabled=True)
-            self.downloader.session.proxies = None
-            self.window.Read(0)
+        self.check_current_proxy()
         while 1:
             event, values = self.window.Read()
             # print(event, values)
@@ -183,16 +201,14 @@ class GUI(object):
 6. Uncheck the `127.0.0.1:1080`, will disable the proxy
 7. `Sub Folder` for saving mp4 files, instead of url netloc as dir name
 8. Double Click tasks of the table, will open url in the webbrowser if task not ok, will open mp4 player if task ok''',
-                    font=('', 18))
+                    font=('Mono', 18))
                 continue
             elif event == 'pause':
                 self.switch_pause_download()
                 continue
             elif event == 'use_proxy':
-                if values[event]:
-                    self.downloader.session.proxies = REQUEST_PROXY
-                else:
-                    self.downloader.session.proxies = None
+                self.check_current_proxy(values['current_proxy'])
+
             elif event == 'watch_clip':
                 if values[event]:
                     WATCH_CLIP.set()
@@ -209,6 +225,11 @@ class GUI(object):
                         del task
                     elif event == 'View':
                         webbrowser.open_new_tab(task.meta.origin)
+            elif values['current_proxy'] != PROXY:
+                # clear proxy on change
+                self.window['use_proxy'].Update(value=False)
+                REQUEST_PROXY.clear()
+                continue
         self.shutdown()
 
     def shutdown(self):
@@ -269,7 +290,7 @@ class GUI(object):
         return path
 
     def init_window(self):
-        button_font = ('', 18)
+        button_font = ('Mono', 18)
         width = self.size[0]
         self.layouts = [
             [
@@ -314,33 +335,40 @@ class GUI(object):
                     text_color='black',
                     tooltip=' Auto download url from Clipboard ',
                     key='watch_clip',
-                    font=('', 15)),
+                    font=('Mono', 15)),
             ],
             [
                 sg.Checkbox(
-                    PROXY,
+                    'Proxy: ',
                     change_submits=1,
                     default=1,
                     background_color=WINDOW_BG,
                     text_color='black',
                     key='use_proxy',
-                    font=('', 15),
+                    font=('Mono', 15),
+                ),
+                sg.Input(
+                    PROXY,
+                    key='current_proxy',
+                    size=(15, 1),
+                    change_submits=1,
+                    tooltip=' Update proxy for new task ',
                 ),
                 sg.Text(
                     'Sub Folder:',
                     background_color=WINDOW_BG,
                     text_color='black',
-                    font=('', 12),
+                    font=('Mono', 12),
                 ),
                 sg.Input(
                     '',
                     key='sub_dir',
                     size=(10, 1),
-                    font=('', 15),
+                    font=('Mono', 15),
                     tooltip=' Sub folder to save files, url netloc to default.',
                 ),
                 sg.Text(
-                    '',
+                    'Mono',
                     key='status_bar',
                     text_color='black',
                     background_color=WINDOW_BG,
@@ -352,12 +380,13 @@ class GUI(object):
                     background_color='#ecf0f1',
                     select_mode=sg.TABLE_SELECT_MODE_EXTENDED,
                     text_color='black',
+                    font=('Mono', 12),
                     key='table',
                     headings=[
                         'Title', 'Status', 'Duration', 'Size', 'Speed',
                         'Timeleft', 'Progress'
                     ],
-                    header_font=('', 18),
+                    header_font=('Mono', 18),
                     auto_size_columns=0,
                     justification='center',
                     display_row_numbers=True,
@@ -418,17 +447,19 @@ class Task(object):
         self.working_space.set()
 
     def pause(self):
-        self.working_space.clear()
-        self.status = 'pause'
+        if self.status in {'todo', 'downloading'}:
+            self.working_space.clear()
+            self.status = 'pause'
 
     def unpause(self):
-        self.working_space.set()
-        self.status = 'downloading'
+        if self.status == 'pause':
+            self.working_space.set()
+            self.status = 'downloading'
 
     def switch_pause(self):
         if self.status == 'pause':
             self.unpause()
-        elif self.status in {'todo', 'downloading'}:
+        else:
             self.pause()
 
     @staticmethod
@@ -444,8 +475,7 @@ class Task(object):
             return 'Unknown'
         percent = min((percent, 100))
         num = percent // 10
-        proc = f"{percent: >3}% {'#'*num}"
-        return f"{proc:=<15}"
+        return f"{percent: >3}% [{'='*num: <10}]"
 
     def download(self):
         if self.file_path.is_file():
@@ -484,6 +514,8 @@ class Task(object):
                 speed = round(diff / (now + 0.001 - start_ts) / 1024, 1)
                 self.speed = f'{speed} KB/S'
                 if self.size:
+                    if self.current_size > self.size:
+                        self.current_size = self.size
                     percent = self.get_percent(self.current_size, self.size)
                     self.state = self.get_proc(percent)
                     self.timeleft = f'{round(self.size/1024/(speed+0.001))} s'
@@ -497,7 +529,7 @@ class Task(object):
             self.f.close()
         self.timeleft = '0 s'
         if self.status == 'ok':
-            GUI.msg = 'ok'
+            GUI.msg = 'Download success.'
             # move
             if not self.file_path.is_file():
                 self.downloading_file_path.rename(self.file_path)
@@ -647,10 +679,15 @@ class Downloader(object):
     @staticmethod
     def check_proxy():
         try:
-            r = requests.get(f'http://{PROXY}', timeout=(1, 1))
-            return r.text.strip() == 'Invalid header received from client.'
-        except requests.exceptions.ConnectTimeout:
-            GUI.msg = 'connect proxy fail.'
+            return requests.head(
+                'http://www.python.org/',
+                timeout=(1.5, 1),
+                proxies={
+                    'http': f'http://{PROXY}',
+                    'https': f'http://{PROXY}',
+                }).headers.get('Content-Length') == '0'
+        except requests.exceptions.RequestException:
+            GUI.msg = 'Check proxy fail.'
             return False
 
     def choose_parser(self, url):
@@ -674,7 +711,7 @@ class Downloader(object):
     def xvp(self, origin):
         for _ in range(1, 3):
             try:
-                r = self.session.get(origin, timeout=(2, 5))
+                r = self.session.get(origin, timeout=(1.5, 5))
                 scode = r.text
                 if 'html5player.setVideoUrlHigh' in scode:
                     break
@@ -695,7 +732,7 @@ class Downloader(object):
     def php(self, origin):
         for _ in range(1, 3):
             try:
-                r = self.session.get(origin, timeout=(2, 5))
+                r = self.session.get(origin, timeout=(1.5, 5))
                 scode = r.text
                 if 'qualityItems_' in scode:
                     break
@@ -744,6 +781,7 @@ class Downloader(object):
         task = Task(meta, self.session, saving_path)
         task.start()
         self.tasks.append(task)
+        GUI.msg = 'Add new task success.'
         return task
 
     def shutdown(self):
