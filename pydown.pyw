@@ -1,4 +1,3 @@
-import base64
 import hashlib
 import inspect
 import json
@@ -716,10 +715,6 @@ class Downloader(object):
         m.update(host.encode('u8'))
         result = m.hexdigest()[(32 - n) // 2:(n - 32) // 2]
         return result
-
-    @staticmethod
-    def decode(string):
-        return base64.b85decode(string.encode('u8')).decode('u8')
 
     @staticmethod
     def get_session(session=None):
