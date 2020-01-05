@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+# pip install torequests pysocks PySimpleGUI
+
 import ctypes
 import time
 from threading import Thread

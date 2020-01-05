@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+# pip install pyperclip requests[socks] PySimpleGUI
+
 import hashlib
 import inspect
 import json
@@ -27,8 +29,6 @@ TODO:
 5. some flexible choose_parser strategy (after domain chosen)
 6. add more default parse rules
 '''
-
-# pip install pyperclip requests[socks] PySimpleGUI
 
 urllib3.disable_warnings()
 
