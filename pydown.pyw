@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import hashlib
 import inspect
 import json
@@ -23,7 +24,7 @@ TODO:
 2. restart
 3. resume breakpoint
 4. speed up by concurrent
-5. some flexible choose_parser strategy, after domain chosen
+5. some flexible choose_parser strategy (after domain chosen)
 6. add more default parse rules
 '''
 
