@@ -243,7 +243,7 @@ class GUI(object):
                         webbrowser.open_new_tab(task.meta.origin)
                     elif event == 'Folder':
                         open_dir(task.saving_path)
-                self.rm_null_dir(remain_downloading=1)
+                self.rm_null_dir(rm_all=0)
             elif event == 'a:65':
                 self.window['table'].Update(
                     select_rows=list(range(len(self.window['table'].Values))))
@@ -263,22 +263,29 @@ class GUI(object):
             del self.window
         self.downloader.shutdown()
         self.clean_downloading_dir()
-        self.rm_null_dir(remain_downloading=0)
+        self.rm_null_dir(rm_all=1)
         self._shutdown = True
 
     def __del__(self):
         self.shutdown()
 
-    def rm_null_dir(self, remain_downloading=True):
+    def rm_null_dir(self, rm_all=False):
         if SAVING_DIR.is_dir():
+            downloading_name = DOWNLOADING_DIR.name
             for folder in SAVING_DIR.iterdir():
-                if remain_downloading and folder.name == DOWNLOADING_DIR.name:
+                if folder.name == downloading_name and not rm_all:
                     continue
                 if folder.is_dir():
-                    try:
-                        folder.rmdir()
-                    except OSError:
-                        pass
+                    self.rmdir(folder)
+        if rm_all:
+            self.rmdir(SAVING_DIR)
+
+    def rmdir(self, path):
+        try:
+            path.rmdir()
+            return True
+        except OSError:
+            return False
 
     def clean_downloading_dir(self):
         if DOWNLOADING_DIR.is_dir():
