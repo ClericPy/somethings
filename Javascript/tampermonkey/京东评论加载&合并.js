@@ -270,7 +270,7 @@
 <label for="commenter_comment"><input type="checkbox" name=".comment-con" id="commenter_comment">文本</label>
 <label for="commenter_comment_pics"><input type="checkbox" checked name=".pic-list" id="commenter_comment_pics">图片</label>
 <label for="commenter_comment_video"><input type="checkbox" checked name=".J-video-view-wrap" id="commenter_comment_video">视频</label>
-<label for="commenter_comment_tags"><input type="checkbox" checked name=".tag-list" id="commenter_comment_tags">标签</label>
+<label for="commenter_comment_tags"><input type="checkbox" checked name=".comment-info" id="commenter_comment_tags">标签</label>
 <label for="commenter_seller_comment"><input type="checkbox" checked name=".recomment-con" id="commenter_seller_comment">卖家回复</label>
 <label for="commenter_comment_custom">自定义:<input type="text" style="width:4em;" value="" placeholder="css" id="commenter_comment_custom"></label>
         `
