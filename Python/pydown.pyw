@@ -243,6 +243,11 @@ class GUI(object):
                         webbrowser.open_new_tab(task.meta.origin)
                     elif event == 'Folder':
                         open_dir(task.saving_path)
+                self.rm_null_dir(remain_downloading=1)
+            elif event == 'a:65':
+                self.window['table'].Update(
+                    select_rows=list(range(len(self.window['table'].Values))))
+                continue
             elif values['current_proxy'] != PROXY:
                 # clear proxy on change
                 self.window['use_proxy'].Update(value=False)
@@ -258,10 +263,22 @@ class GUI(object):
             del self.window
         self.downloader.shutdown()
         self.clean_downloading_dir()
+        self.rm_null_dir(remain_downloading=0)
         self._shutdown = True
 
     def __del__(self):
         self.shutdown()
+
+    def rm_null_dir(self, remain_downloading=True):
+        if SAVING_DIR.is_dir():
+            for folder in SAVING_DIR.iterdir():
+                if remain_downloading and folder.name == DOWNLOADING_DIR.name:
+                    continue
+                if folder.is_dir():
+                    try:
+                        folder.rmdir()
+                    except OSError:
+                        pass
 
     def clean_downloading_dir(self):
         if DOWNLOADING_DIR.is_dir():
@@ -413,8 +430,8 @@ class GUI(object):
                     right_click_menu=['', ['&Webview', '&Folder', '&Delete']],
                     num_rows=999,
                     vertical_scroll_only=0,
-                    tooltip=
-                    'Press `DEL` to delete, dbclick to open file / pause task.',
+                    tooltip='Double click to open file or pause task'
+                    '; Ctrl-A to select all rows; Press `DEL` to delete',
                     col_widths=[
                         int(40 / 100 * width * 0.1),
                         int(10 / 100 * width * 0.1),
