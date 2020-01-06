@@ -29,6 +29,7 @@
 
     window.auto_pager_running = false
     var css_to_hidden = {}
+    window.backup_mc_innerHTML = ''
     var custom_css_to_hidden = ''
     var button_style = `font: inherit; margin: 3px; overflow: visible; text-transform: none; -webkit-appearance: button; letter-spacing: 0.01em; zoom: 1; line-height: normal; white-space: nowrap; vertical-align: middle; text-align: center; cursor: pointer; -webkit-user-drag: none; user-select: none; box-sizing: border-box; font-size: 100%; padding: .5em 1em; color: rgba(0,0,0,.8); border: none transparent; background-color: #e6e6e6; text-decoration: none; border-radius: 2px; font-family: inherit;`
 
@@ -80,11 +81,21 @@
             document.getElementById('commenter_show_button').style.display = 'inline-block'
         }
         check_missing_pages()
+        if (document.getElementById('comment-0')) {
+            window.backup_mc_innerHTML = document.querySelector('#comment .mc').innerHTML
+        } else {
+            alert('没有评论了, 点击[展示全部]进行复制')
+        }
     }
 
     function show_pages() {
-
         var container = document.getElementById('comment-0')
+        if (!container) {
+            var mc_node = document.querySelector('#comment .mc')
+            if (window.backup_mc_innerHTML) {
+                mc_node.innerHTML = backup_mc_innerHTML
+            }
+        }
         var backup_np_node = document.getElementsByClassName('com-table-footer')[0]
         container.innerHTML = ''
         Object.keys(pages).sort().forEach(function (key) {
@@ -165,10 +176,7 @@
         var head = document.getElementById('comment')
         var mc_node = document.querySelector('#comment .mc')
         let observer = new MutationObserver(collect_dom_to_pages);
-        // var targetNode = document.getElementsByClassName('comment-item')[0]
-        // targetNode.addEventListener('DOMNodeRemoved', function () {
-        //     collect_dom_to_pages()
-        // }, false);
+
         let options = {
             'childList': true,
             'attributes': true
@@ -309,7 +317,7 @@
             shutdown_auto_pager()
             var commenter_auto_np_node = document.getElementById('commenter_auto_np')
             commenter_auto_np_node.checked = false
-            alert('已达最后一页')
+            alert('没有下一页')
             return false
         } else {
             np.removeAttribute('href')
