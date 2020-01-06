@@ -60,10 +60,19 @@
 
 
     function collect_dom_to_pages() {
-        var node = document.querySelectorAll('#comment-0>div.comment-item')
+        var curr_page = document.querySelector('[class="ui-page-curr"]')
+        let commenter_crawl_button = document.getElementById('commenter_crawl_button')
+        if (!curr_page) {
+            return
+        }
+        if (!commenter_crawl_button) {
+            return
+        }
+        var page = curr_page.innerText
         console.log(Object.keys(pages).length + ' pages: ' + Object.keys(pages))
-        var page = document.querySelector('[class="ui-page-curr"]').innerText
-        document.getElementById('commenter_crawl_button').innerText = '手动翻页 ' + page
+
+        commenter_crawl_button.innerText = '手动翻页 ' + page
+        var node = document.querySelectorAll('#comment-0>div.comment-item')
         if (node.length > 0) {
             pages[page] = node
         }
@@ -153,13 +162,20 @@
 
     function commenter_collect_comment() {
 
-        var head = document.getElementsByClassName('filter-list')[0]
-        var targetNode = document.getElementsByClassName('comment-item')[0]
-        targetNode.addEventListener('DOMNodeRemoved', function () {
-            collect_dom_to_pages()
-        }, false);
+        var head = document.getElementById('comment')
+        var mc_node = document.querySelector('#comment .mc')
+        let observer = new MutationObserver(collect_dom_to_pages);
+        // var targetNode = document.getElementsByClassName('comment-item')[0]
+        // targetNode.addEventListener('DOMNodeRemoved', function () {
+        //     collect_dom_to_pages()
+        // }, false);
+        let options = {
+            'childList': true,
+            'attributes': true
+        };
+        observer.observe(document.getElementById('comment-0'), options);
         var hr = document.createElement("hr");
-        head.appendChild(hr)
+        head.insertBefore(hr, mc_node)
 
 
         var show_button = document.createElement("button");
@@ -168,7 +184,7 @@
         show_button.setAttribute('style', button_style)
         show_button.style.display = 'none'
         show_button.addEventListener('click', show_pages)
-        head.appendChild(show_button)
+        head.insertBefore(show_button, mc_node)
 
         var copy_button = document.createElement("button");
         copy_button.innerText = '复制 HTML'
@@ -176,7 +192,7 @@
         copy_button.setAttribute('style', button_style)
         copy_button.style.display = 'none'
         copy_button.addEventListener('click', copy_html)
-        head.appendChild(copy_button)
+        head.insertBefore(copy_button, mc_node)
 
         var copy_text_button = document.createElement("button");
         copy_text_button.innerText = '复制 TEXT'
@@ -184,7 +200,7 @@
         copy_text_button.setAttribute('style', button_style)
         copy_text_button.style.display = 'none'
         copy_text_button.addEventListener('click', copy_text)
-        head.appendChild(copy_text_button)
+        head.insertBefore(copy_text_button, mc_node)
 
 
         var pastebin = document.createElement("a");
@@ -192,31 +208,31 @@
         pastebin.href = 'https://paste.ubuntu.com/'
         pastebin.target = '_blank'
         pastebin.style.margin = '2px'
-        head.appendChild(pastebin)
+        head.insertBefore(pastebin, mc_node)
 
         var commenter_state = document.createElement("span");
         commenter_state.setAttribute('id', 'commenter_state')
         commenter_state.setAttribute('style', 'padding: 0.5em;')
-        head.appendChild(commenter_state)
+        head.insertBefore(commenter_state, mc_node)
 
         var commenter_auto_np_interval = document.createElement("input");
         commenter_auto_np_interval.setAttribute('id', 'commenter_auto_np_interval')
         commenter_auto_np_interval.setAttribute('value', '2')
         commenter_auto_np_interval.setAttribute('size', 1)
         commenter_auto_np_interval.setAttribute('style', 'text-align: center;')
-        head.appendChild(commenter_auto_np_interval)
+        head.insertBefore(commenter_auto_np_interval, mc_node)
 
         // var auto_page_label = document.createElement("span");
         // auto_page_label.innerText = '(s) 自动翻页'
         // auto_page_label.setAttribute = ('weight', 1000)
         // copy_text_button.style.margin = '3px'
-        // head.appendChild(auto_page_label)
+        // head.insertBefore(auto_page_label, mc_node)
 
         // var commenter_auto_np = document.createElement("input");
         // commenter_auto_np.setAttribute('id', 'commenter_auto_np')
         // commenter_auto_np.setAttribute('type', 'checkbox')
         // commenter_auto_np.style.zoom = '130%'
-        // head.appendChild(commenter_auto_np)
+        // head.insertBefore(commenter_auto_np, mc_node)
 
         // var crawl_button = document.createElement("button");
         // crawl_button.innerText = '手动翻页'
@@ -224,7 +240,7 @@
         // crawl_button.setAttribute('style', button_style)
         // crawl_button.style.display = 'none'
         // crawl_button.addEventListener('click', collect_next_page)
-        // head.appendChild(crawl_button)
+        // head.insertBefore(crawl_button, mc_node)
 
         var filter_node = document.createElement("div")
         filter_node.setAttribute('id', 'commenter_filter')
@@ -250,7 +266,7 @@
 <label for="commenter_seller_comment"><input type="checkbox" checked name=".recomment-con" id="commenter_seller_comment">卖家回复</label>
 <label for="commenter_comment_custom">自定义:<input type="text" style="width:4em;" value="" placeholder="css" id="commenter_comment_custom"></label>
         `
-        head.appendChild(filter_node)
+        head.insertBefore(filter_node, mc_node)
 
         document.getElementById('commenter_crawl_button').addEventListener('click', collect_next_page)
         document.getElementById('commenter_auto_np').addEventListener('change', function () {
@@ -295,6 +311,8 @@
             commenter_auto_np_node.checked = false
             alert('已达最后一页')
             return false
+        } else {
+            np.removeAttribute('href')
         }
         np.click()
 
