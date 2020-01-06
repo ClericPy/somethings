@@ -215,7 +215,7 @@
         // var commenter_auto_np = document.createElement("input");
         // commenter_auto_np.setAttribute('id', 'commenter_auto_np')
         // commenter_auto_np.setAttribute('type', 'checkbox')
-        // commenter_auto_np.style.zoom = '120%'
+        // commenter_auto_np.style.zoom = '130%'
         // head.appendChild(commenter_auto_np)
 
         // var crawl_button = document.createElement("button");
@@ -317,6 +317,7 @@
         button.innerHTML = '<b>收集评论</b>'
         button.setAttribute('id', 'commenter_collect')
         button.setAttribute('style', button_style)
+        button.style.zoom = '1.3'
         button.addEventListener('click', setup_commenter_collect_comment)
         tab.appendChild(button)
     }
