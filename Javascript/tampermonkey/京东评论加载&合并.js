@@ -16,7 +16,7 @@
 
 使用方法
 1. 加载网页以后, 在商品介绍 tab 位置会出现 [收集评论] 按钮, 点击, 等 1 秒
-2. 可以手动点 [采集], 一页页收集, 也可以配置好间隔秒数(默认2秒)点右边 checkbox 自动翻页
+2. 可以手动点 [手动翻页], 一页页收集, 也可以配置好间隔秒数(默认2秒)点右边 checkbox 自动翻页
 3. 采集结束(或自行停止)后, 点击 [展示全部] 按钮, 则评论会在原来位置对多页合并
 4. 自行去噪过滤(可以通过选项, 也可以自己指定 css), 然后点击 [复制 TEXT] 即可复制到剪贴板
 5. emoji [文本] 点击可以打开 Ubuntu 的 pastebin 来粘贴刚才复制了的文本
@@ -78,7 +78,8 @@
             pages[page] = node
         }
         if (Object.keys(pages) > 0) {
-            document.getElementById('commenter_show_button').style.display = 'inline-block'
+            document.getElementById('commenter_show_button').disabled = false
+            show_button.style.color = 'black'
         }
         check_missing_pages()
         if (document.getElementById('comment-0')) {
@@ -184,7 +185,8 @@
         show_button.innerText = '展示全部'
         show_button.setAttribute('id', 'commenter_show_button')
         show_button.setAttribute('style', button_style)
-        show_button.style.display = 'none'
+        show_button.disabled = true
+        show_button.style.color = 'grey'
         show_button.addEventListener('click', show_pages)
         head.insertBefore(show_button, mc_node)
 
@@ -223,27 +225,6 @@
         commenter_auto_np_interval.setAttribute('size', 1)
         commenter_auto_np_interval.setAttribute('style', 'text-align: center;')
         head.insertBefore(commenter_auto_np_interval, mc_node)
-
-        // var auto_page_label = document.createElement("span");
-        // auto_page_label.innerText = '(s) 自动翻页'
-        // auto_page_label.setAttribute = ('weight', 1000)
-        // copy_text_button.style.margin = '3px'
-        // head.insertBefore(auto_page_label, mc_node)
-
-        // var commenter_auto_np = document.createElement("input");
-        // commenter_auto_np.setAttribute('id', 'commenter_auto_np')
-        // commenter_auto_np.setAttribute('type', 'checkbox')
-        // commenter_auto_np.style.zoom = '130%'
-        // head.insertBefore(commenter_auto_np, mc_node)
-
-        // var crawl_button = document.createElement("button");
-        // crawl_button.innerText = '手动翻页'
-        // crawl_button.setAttribute('id', 'commenter_crawl_button')
-        // crawl_button.setAttribute('style', button_style)
-        // crawl_button.style.display = 'none'
-        // crawl_button.addEventListener('click', collect_next_page)
-        // head.insertBefore(crawl_button, mc_node)
-
         var filter_node = document.createElement("div")
         filter_node.setAttribute('id', 'commenter_filter')
         filter_node.style.display = 'inline'
@@ -285,30 +266,31 @@
             })
         });
         let commenter_comment_custom = document.getElementById('commenter_comment_custom')
-        // commenter_comment_custom.addEventListener("keypress", function () {
-        //     var value_length = this.value.length
-        //     this.style.width = value_length * 5 + 'px'
-        // })
+
         commenter_comment_custom.addEventListener('change', function () {
             custom_css_to_hidden = this.value
             this.title = this.value
             update_new_style()
         })
-        collect_dom_to_pages()
-        setTimeout(() => {
-            let commenter_crawl_button = document.getElementById('commenter_crawl_button')
-            commenter_crawl_button.disabled = false
-            commenter_crawl_button.style.color = 'black'
-            collect_dom_to_pages()
-        }, 1000);
+        let commenter_crawl_button = document.getElementById('commenter_crawl_button')
+        var tries = 0
+        var checkExist = setInterval(function () {
+            tries += 1
+            if (commenter_crawl_button) {
+                commenter_crawl_button.disabled = false
+                commenter_crawl_button.style.color = 'black'
+                collect_dom_to_pages()
+                clearInterval(checkExist);
+            }
+            if (tries > 20) {
+                clearInterval(checkExist);
+            }
+        }, 200);
+
     }
 
     function collect_next_page() {
         var np = document.getElementsByClassName('ui-pager-next')[0] || ''
-        collect_dom_to_pages()
-        setTimeout(() => {
-            collect_dom_to_pages()
-        }, 2000);
         if (np == '') {
             shutdown_auto_pager()
             var commenter_auto_np_node = document.getElementById('commenter_auto_np')
@@ -362,9 +344,5 @@
         button.addEventListener('click', setup_commenter_collect_layouts)
         tab.appendChild(button)
     }
-
-
     window.onload = setup
-
-    // Your code here...
 })();
