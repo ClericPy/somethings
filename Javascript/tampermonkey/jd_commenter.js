@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         京东评论合并工具
-// @namespace    https://github.com/ClericPy/somethings/tree/master/Javascript/tampermonkey
-// @version      1.4
+// @namespace    https://github.com/ClericPy/somethings
+// @version      1.5
 // @updateURL    https://raw.githubusercontent.com/ClericPy/somethings/master/Javascript/tampermonkey/jd_commenter.js
 // @downloadURL  https://raw.githubusercontent.com/ClericPy/somethings/master/Javascript/tampermonkey/jd_commenter.js
 // @description  try to take over the world!
