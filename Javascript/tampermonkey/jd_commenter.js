@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         京东评论合并工具
 // @namespace    https://github.com/ClericPy/somethings
-// @version      1.5
+// @version      1.6
 // @updateURL    https://raw.githubusercontent.com/ClericPy/somethings/master/Javascript/tampermonkey/jd_commenter.js
 // @downloadURL  https://raw.githubusercontent.com/ClericPy/somethings/master/Javascript/tampermonkey/jd_commenter.js
 // @description  try to take over the world!
@@ -302,11 +302,10 @@
             this.title = this.value
             update_new_style()
         })
-        let commenter_crawl_button = document.getElementById('commenter_crawl_button')
         var tries = 0
         var checkExist = setInterval(function () {
             tries += 1
-            if (commenter_crawl_button) {
+            if (document.getElementById('commenter_crawl_button')) {
                 commenter_crawl_button.disabled = false
                 commenter_crawl_button.style.color = 'black'
                 collect_dom_to_pages()
@@ -347,11 +346,11 @@
             // 'characterData': true,
             // 'attributes': true,
         };
-        var c0 = document.getElementById('comment-0')
         // observer.observe(document.querySelector('#comment>.mc'), options)
         var tries = 0
         var checkExist = setInterval(function () {
             tries += 1
+            var c0 = document.getElementById('comment-0')
             if (c0) {
                 // console.log("Exists!");
                 observer.observe(c0, options);
