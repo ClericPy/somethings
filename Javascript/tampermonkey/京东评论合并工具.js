@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         京东评论合并工具
 // @namespace    https://github.com/ClericPy/somethings/tree/master/Javascript/tampermonkey
-// @version      1.2
+// @version      1.3
 // @updateURL    https://raw.githubusercontent.com/ClericPy/somethings/master/Javascript/tampermonkey/%E4%BA%AC%E4%B8%9C%E8%AF%84%E8%AE%BA%E5%90%88%E5%B9%B6%E5%B7%A5%E5%85%B7.js
 // @downloadURL  https://raw.githubusercontent.com/ClericPy/somethings/master/Javascript/tampermonkey/%E4%BA%AC%E4%B8%9C%E8%AF%84%E8%AE%BA%E5%90%88%E5%B9%B6%E5%B7%A5%E5%85%B7.js
 // @description  try to take over the world!
@@ -261,7 +261,7 @@
     <input type="checkbox" id="commenter_auto_np">
 </label>
 <button id="commenter_crawl_button" disabled style="font-style: inherit; font-variant: inherit; font-weight: inherit; font-stretch: inherit; margin: 3px; overflow: visible; text-transform: none; -webkit-appearance: button; letter-spacing: 0.01em; zoom: 1; line-height: normal; white-space: nowrap; vertical-align: middle; text-align: center; cursor: pointer; -webkit-user-drag: none; user-select: none; box-sizing: border-box; font-size: 100%; padding: 0.5em 1em; color: grey; border: none transparent; background-color: rgb(230, 230, 230); text-decoration: none; border-radius: 2px; font-family: inherit; weight: 1000">手动翻页</button> | 
-<button id="commenter_get_help">帮助</button> | 
+<button id="commenter_get_help">帮助</button>
 <span id="commenter_status_bar"></span>
 <hr><span><b>去噪:</b></span>
 <label for="commenter_user"><input type="checkbox" checked name=".user-info" id="commenter_user">用户</label>
@@ -276,7 +276,7 @@
 <label for="commenter_comment_tags"><input type="checkbox" checked name=".comment-info" id="commenter_comment_tags">标签</label>
 <label for="commenter_seller_comment"><input type="checkbox" checked name=".recomment-con" id="commenter_seller_comment">卖家回复</label>
 <label for="commenter_non_plus_vip"><input type="checkbox" name=".comment-item:not(.plus_vip_item)" id="commenter_non_plus_vip">非 PLUS 会员</label>
-<label for="commenter_comment_custom">自定义:<input type="text" style="width:4em;" value="" placeholder="css" id="commenter_comment_custom"></label>
+<label for="commenter_comment_custom">自定义 CSS:<input type="text" style="width:4em;" value="" placeholder="" id="commenter_comment_custom"></label>
         `
         head.insertBefore(filter_node, mc_node)
 
