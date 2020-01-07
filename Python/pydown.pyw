@@ -170,10 +170,8 @@ class GUI(object):
         if current_proxy is not None:
             PROXY = current_proxy
         if PROXY and self.downloader.check_proxy():
-            REQUEST_PROXY.update({
-                'https': f'http://{PROXY}',
-                'http': f'http://{PROXY}'
-            })
+            proxy = PROXY if '://' in PROXY else f'http://{PROXY}'
+            REQUEST_PROXY.update({'https': proxy, 'http': proxy})
             self.window['current_proxy'].Update(text_color='green')
         else:
             REQUEST_PROXY.clear()
