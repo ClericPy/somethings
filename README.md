@@ -34,7 +34,7 @@ https://github.com/ClericPy/somethings/releases
 2. **Javascript**
    1. tampermonkey (直接拖入 Chrome 油猴)
 
-      1. 京东评论合并工具.js
+      1. jd_commenter.js
 
          > *主要用途:*
          >
