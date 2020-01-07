@@ -84,7 +84,7 @@
         if (document.getElementById('comment-0')) {
             window.backup_mc_innerHTML = document.querySelector('#comment .mc').innerHTML
         } else {
-            alert('没有评论了, 点击[展示全部]进行复制')
+            document.getElementById('commenter_status_bar').innerText = '没有评论了, 点击[展示全部]进行复制'
         }
     }
 
@@ -259,7 +259,7 @@
     <input type="checkbox" id="commenter_auto_np">
 </label>
 <button id="commenter_crawl_button" style="font-style: inherit; font-variant: inherit; font-weight: inherit; font-stretch: inherit; margin: 3px; overflow: visible; text-transform: none; -webkit-appearance: button; letter-spacing: 0.01em; zoom: 1; line-height: normal; white-space: nowrap; vertical-align: middle; text-align: center; cursor: pointer; -webkit-user-drag: none; user-select: none; box-sizing: border-box; font-size: 100%; padding: 0.5em 1em; color: rgba(0, 0, 0, 0.8); border: none transparent; background-color: rgb(230, 230, 230); text-decoration: none; border-radius: 2px; font-family: inherit; display: none;">手动翻页</button>
-
+<span id="commenter_status_bar"></span>
 <hr><span><b>去噪:</b></span>
 <label for="commenter_user"><input type="checkbox" checked name=".user-info" id="commenter_user">用户</label>
 <label for="commenter_production"><input type="checkbox" checked name=".order-info>span:first-child" id="commenter_production">产品</label>
@@ -317,6 +317,7 @@
             shutdown_auto_pager()
             var commenter_auto_np_node = document.getElementById('commenter_auto_np')
             commenter_auto_np_node.checked = false
+            document.getElementById('commenter_status_bar').innerText = '没有下一页'
             alert('没有下一页')
             return false
         } else {
