@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         京东评论合并工具
 // @namespace    https://github.com/ClericPy/somethings
-// @version      1.6
+// @version      1.7
 // @updateURL    https://raw.githubusercontent.com/ClericPy/somethings/master/Javascript/tampermonkey/jd_commenter.js
 // @downloadURL  https://raw.githubusercontent.com/ClericPy/somethings/master/Javascript/tampermonkey/jd_commenter.js
 // @description  try to take over the world!
@@ -66,13 +66,14 @@
     }
 
     function update_non_plus_class_to_item() {
-        document.querySelectorAll('#comment-0 a.comment-plus-icon').forEach(item => {
+        document.querySelectorAll('#comment [style="display: block;"][data-tab="item"] a.comment-plus-icon').forEach(item => {
             item.parentElement.parentElement.parentElement.classList.add('plus_vip_item')
         });
     }
 
+
     function collect_dom_to_pages() {
-        var curr_page = document.querySelector('#comment [class="ui-page-curr"]')
+        var curr_page = document.querySelector('#comment [style="display: block;"][data-tab="item"] [class="ui-page-curr"]')
         let commenter_crawl_button = document.getElementById('commenter_crawl_button')
         if (!curr_page) {
             return
@@ -84,7 +85,7 @@
         console.log(Object.keys(pages).length + ' pages: ' + Object.keys(pages))
 
         commenter_crawl_button.innerText = '手动翻页 ' + page
-        var node = document.querySelectorAll('#comment-0>div.comment-item')
+        var node = document.querySelectorAll('#comment [style="display: block;"][data-tab="item"]>div.comment-item')
         if (node.length > 0) {
             pages[page] = node
         }
@@ -94,7 +95,8 @@
             show_button.style.color = 'black'
         }
         check_missing_pages()
-        if (document.getElementById('comment-0')) {
+        // 反爬导致崩溃, 放上备用页面
+        if (document.querySelector('#comment [style="display: block;"][data-tab="item"]')) {
             window.backup_mc_innerHTML = document.querySelector('#comment .mc').innerHTML
         } else {
             document.getElementById('commenter_status_bar').innerText = '没有评论了, 点击[展示全部]进行复制'
@@ -103,11 +105,11 @@
     }
 
     function show_pages() {
-        var container = document.getElementById('comment-0')
+        var container = document.querySelector('#comment [style="display: block;"][data-tab="item"]')
         if (!container) {
             var mc_node = document.querySelector('#comment .mc')
             if (window.backup_mc_innerHTML) {
-                mc_node.innerHTML = backup_mc_innerHTML
+                mc_node.innerHTML = window.backup_mc_innerHTML
             }
         }
         var backup_np_node = document.getElementsByClassName('com-table-footer')[0]
@@ -127,7 +129,7 @@
     }
 
     function copy_html() {
-        let items = document.querySelectorAll('#comment-0>.comment-item')
+        let items = document.querySelectorAll('#comment [style="display: block;"][data-tab="item"]>.comment-item')
         let text = ''
         let filt_plus = document.getElementById('commenter_non_plus_vip').checked
         items.forEach(item => {
@@ -140,7 +142,7 @@
     }
 
     function copy_text() {
-        let items = document.querySelectorAll('#comment-0>.comment-item')
+        let items = document.querySelectorAll('#comment [style="display: block;"][data-tab="item"]>.comment-item')
         let text = ''
         let filt_plus = document.getElementById('commenter_non_plus_vip').checked
         items.forEach(item => {
@@ -306,20 +308,27 @@
         var checkExist = setInterval(function () {
             tries += 1
             if (document.getElementById('commenter_crawl_button')) {
+                document.querySelectorAll('ul.filter-list>li').forEach(element => {
+                    element.addEventListener('click', function () {
+                        pages = {}
+                    })
+                });
                 commenter_crawl_button.disabled = false
                 commenter_crawl_button.style.color = 'black'
                 collect_dom_to_pages()
                 clearInterval(checkExist);
+                return
             }
             if (tries > 20) {
                 clearInterval(checkExist);
+                return
             }
         }, 200);
 
     }
 
     function collect_next_page() {
-        var np = document.querySelector('#comment .ui-pager-next')
+        var np = document.querySelector('#comment [style="display: block;"][data-tab="item"] .ui-pager-next')
         if (!np) {
             shutdown_auto_pager()
             var commenter_auto_np_node = document.getElementById('commenter_auto_np')
@@ -353,12 +362,15 @@
             var c0 = document.getElementById('comment-0')
             if (c0) {
                 // console.log("Exists!");
-                observer.observe(c0, options);
+                c0.setAttribute('style', 'display: block;')
+                observer.observe(document.querySelector('#comment .mc >.comments-list>.tab-con'), options);
                 commenter_collect_layouts()
                 clearInterval(checkExist);
+                return
             }
             if (tries > 20) {
                 clearInterval(checkExist);
+                return
             }
         }, 200);
 
