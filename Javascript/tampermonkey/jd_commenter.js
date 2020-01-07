@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         京东评论合并工具
 // @namespace    https://github.com/ClericPy/somethings
-// @version      1.7
+// @version      1.8
 // @updateURL    https://raw.githubusercontent.com/ClericPy/somethings/master/Javascript/tampermonkey/jd_commenter.js
 // @downloadURL  https://raw.githubusercontent.com/ClericPy/somethings/master/Javascript/tampermonkey/jd_commenter.js
 // @description  try to take over the world!
@@ -65,10 +65,16 @@
 
     }
 
-    function update_non_plus_class_to_item() {
+    function add_class_for_filter() {
         document.querySelectorAll('#comment [style="display: block;"][data-tab="item"] a.comment-plus-icon').forEach(item => {
-            item.parentElement.parentElement.parentElement.classList.add('plus_vip_item')
+            item.parentElement.parentElement.parentElement.classList.add('commenter_plus_vip_item')
         });
+        document.querySelectorAll('.comment-op').forEach(item => {
+            if (item && item.innerText != '                    举报                    0                    0                ') {
+                item.parentElement.parentElement.parentElement.classList.add('commenter_with_reply')
+            }
+        });
+
     }
 
 
@@ -101,7 +107,7 @@
         } else {
             document.getElementById('commenter_status_bar').innerText = '没有评论了, 点击[展示全部]进行复制'
         }
-        update_non_plus_class_to_item()
+        add_class_for_filter()
     }
 
     function show_pages() {
@@ -125,15 +131,19 @@
         if (backup_np_node) {
             container.appendChild(backup_np_node)
         }
-        update_non_plus_class_to_item()
+        add_class_for_filter()
     }
 
     function copy_html() {
         let items = document.querySelectorAll('#comment [style="display: block;"][data-tab="item"]>.comment-item')
         let text = ''
         let filt_plus = document.getElementById('commenter_non_plus_vip').checked
+        let filt_reply = document.getElementById('commenter_non_reply').checked
         items.forEach(item => {
-            if (!item.classList.contains('plus_vip_item') && filt_plus) {
+            if (!item.classList.contains('commenter_plus_vip_item') && filt_plus) {
+                return
+            }
+            if (!item.classList.contains('commenter_with_reply') && filt_reply) {
                 return
             }
             text += item.outerHTML
@@ -145,8 +155,12 @@
         let items = document.querySelectorAll('#comment [style="display: block;"][data-tab="item"]>.comment-item')
         let text = ''
         let filt_plus = document.getElementById('commenter_non_plus_vip').checked
+        let filt_reply = document.getElementById('commenter_non_reply').checked
         items.forEach(item => {
-            if (!item.classList.contains('plus_vip_item') && filt_plus) {
+            if (!item.classList.contains('commenter_plus_vip_item') && filt_plus) {
+                return
+            }
+            if (!item.classList.contains('commenter_with_reply') && filt_reply) {
                 return
             }
             text += item.innerText.replace('\n', ' ') + '\n'
@@ -277,7 +291,8 @@
 <label for="commenter_comment_video"><input type="checkbox" checked name=".J-video-view-wrap" id="commenter_comment_video">视频</label>
 <label for="commenter_comment_tags"><input type="checkbox" checked name=".comment-info" id="commenter_comment_tags">标签</label>
 <label for="commenter_seller_comment"><input type="checkbox" checked name=".recomment-con" id="commenter_seller_comment">卖家回复</label>
-<label for="commenter_non_plus_vip"><input type="checkbox" name=".comment-item:not(.plus_vip_item)" id="commenter_non_plus_vip">非 PLUS 会员</label>
+<label for="commenter_non_plus_vip"><input type="checkbox" name=".comment-item:not(.commenter_plus_vip_item)" title="如果选中, 则只显示 Plus 会员的评论" id="commenter_non_plus_vip">非 PLUS 会员</label>
+<label for="commenter_non_reply"><input type="checkbox" name=".comment-item:not(.commenter_with_reply)" title="如果选中, 则只显示有点赞和回复的评论" id="commenter_non_reply">无互动</label>
 <label for="commenter_comment_custom">自定义 CSS:<input type="text" style="width:4em;" value="" placeholder="" id="commenter_comment_custom"></label>
         `
         head.insertBefore(filter_node, mc_node)
@@ -288,7 +303,7 @@
             auto_next_page()
         }, false)
 
-        var filter_ids = ['commenter_user', 'commenter_production', 'commenter_time', 'commenter_append', 'commenter_append_time', 'commenter_other', 'commenter_comment', 'commenter_comment_pics', 'commenter_comment_video', 'commenter_comment_tags', 'commenter_seller_comment', 'commenter_non_plus_vip']
+        var filter_ids = ['commenter_user', 'commenter_production', 'commenter_time', 'commenter_append', 'commenter_append_time', 'commenter_other', 'commenter_comment', 'commenter_comment_pics', 'commenter_comment_video', 'commenter_comment_tags', 'commenter_seller_comment', 'commenter_non_plus_vip', 'commenter_non_reply']
         filter_ids.forEach(eid => {
             let node = document.getElementById(eid)
             css_to_hidden[node.name] = node.checked
