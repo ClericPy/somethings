@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         dogedoge 搜索增强工具
-// @namespace    https://github.com/ClericPy/somethings/tree/master/Javascript/tampermonkey
-// @version      0.3
+// @namespace    https://github.com/ClericPy/somethings
+// @version      0.5
 // @description  try to take over the world!
 // @author       Clericpy
 // @match        https://www.dogedoge.com/results*
