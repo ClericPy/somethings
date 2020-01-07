@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         京东评论合并工具
 // @namespace    https://github.com/ClericPy/somethings
-// @version      1.9
+// @version      2.0
 // @updateURL    https://raw.githubusercontent.com/ClericPy/somethings/master/Javascript/tampermonkey/jd_commenter.js
 // @downloadURL  https://raw.githubusercontent.com/ClericPy/somethings/master/Javascript/tampermonkey/jd_commenter.js
 // @description  try to take over the world!
@@ -70,8 +70,11 @@
             item.parentElement.parentElement.parentElement.classList.add('commenter_plus_vip_item')
         });
         document.querySelectorAll('.comment-op').forEach(item => {
-            if (item && item.innerText != '                    举报                    0                    0                ') {
+            if (item && !/\s*举报\s*\d+\s*0\s*/.test(item.innerText)) {
                 item.parentElement.parentElement.parentElement.classList.add('commenter_with_reply')
+            }
+            if (item && !/\s*举报\s*0\s*\d+\s*/.test(item.innerText)) {
+                item.parentElement.parentElement.parentElement.classList.add('commenter_with_like')
             }
         });
 
@@ -139,11 +142,15 @@
         let text = ''
         let filt_plus = document.getElementById('commenter_non_plus_vip').checked
         let filt_reply = document.getElementById('commenter_non_reply').checked
+        let filt_like = document.getElementById('commenter_non_like').checked
         items.forEach(item => {
             if (!item.classList.contains('commenter_plus_vip_item') && filt_plus) {
                 return
             }
             if (!item.classList.contains('commenter_with_reply') && filt_reply) {
+                return
+            }
+            if (!item.classList.contains('commenter_with_like') && filt_like) {
                 return
             }
             text += item.outerHTML
@@ -156,11 +163,15 @@
         let text = ''
         let filt_plus = document.getElementById('commenter_non_plus_vip').checked
         let filt_reply = document.getElementById('commenter_non_reply').checked
+        let filt_like = document.getElementById('commenter_non_like').checked
         items.forEach(item => {
             if (!item.classList.contains('commenter_plus_vip_item') && filt_plus) {
                 return
             }
             if (!item.classList.contains('commenter_with_reply') && filt_reply) {
+                return
+            }
+            if (!item.classList.contains('commenter_with_like') && filt_like) {
                 return
             }
             text += item.innerText.replace('\n', ' ') + '\n'
@@ -292,7 +303,8 @@
 <label for="commenter_comment_tags"><input type="checkbox" checked name=".comment-info" id="commenter_comment_tags">标签</label>
 <label for="commenter_seller_comment"><input type="checkbox" checked name=".recomment-con" id="commenter_seller_comment">卖家回复</label>
 <label for="commenter_non_plus_vip"><input type="checkbox" name=".comment-item:not(.commenter_plus_vip_item)" title="如果选中, 则只显示 Plus 会员的评论" id="commenter_non_plus_vip">非 PLUS 会员</label>
-<label for="commenter_non_reply"><input type="checkbox" name=".comment-item:not(.commenter_with_reply)" title="如果选中, 则只显示有点赞和回复的评论" id="commenter_non_reply">无互动</label>
+<label for="commenter_non_reply"><input type="checkbox" name=".comment-item:not(.commenter_with_reply)" title="如果选中, 则只显示有回复的评论" id="commenter_non_reply">无回复</label>
+<label for="commenter_non_like"><input type="checkbox" name=".comment-item:not(.commenter_with_like)" title="如果选中, 则只显示有点赞的评论" id="commenter_non_like">无赞</label>
 <label for="commenter_comment_custom">自定义 CSS:<input type="text" style="width:4em;" value="" placeholder="" id="commenter_comment_custom"></label>
         `
         head.insertBefore(filter_node, mc_node)
@@ -303,7 +315,7 @@
             auto_next_page()
         }, false)
 
-        var filter_ids = ['commenter_user', 'commenter_production', 'commenter_time', 'commenter_append', 'commenter_append_time', 'commenter_other', 'commenter_comment', 'commenter_comment_pics', 'commenter_comment_video', 'commenter_comment_tags', 'commenter_seller_comment', 'commenter_non_plus_vip', 'commenter_non_reply']
+        var filter_ids = ['commenter_user', 'commenter_production', 'commenter_time', 'commenter_append', 'commenter_append_time', 'commenter_other', 'commenter_comment', 'commenter_comment_pics', 'commenter_comment_video', 'commenter_comment_tags', 'commenter_seller_comment', 'commenter_non_plus_vip', 'commenter_non_reply', 'commenter_non_like']
         filter_ids.forEach(eid => {
             let node = document.getElementById(eid)
             css_to_hidden[node.name] = node.checked
