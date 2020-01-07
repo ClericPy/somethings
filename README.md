@@ -56,6 +56,6 @@ https://github.com/ClericPy/somethings/releases
          >
          > *5. emoji [文本] 点击可以打开 Ubuntu 的 pastebin 来粘贴刚才复制了的文本*
 
-      2. dogedoge 搜索添加纯英文搜索词自动翻译, 百度 google 跳转.js
+      2. dogedoge_search_plus.js
       
-         > 如题, 就是添加点小按钮给多吉搜索和有道翻译. 纯英文检索会触发英译中, 中文检索词结尾带 空格+翻译 / 空格+英文 / 空格+英语 触发中译英
+         > doge 搜索添加纯英文搜索词自动翻译, 百度 google 跳转. 纯英文检索会触发英译中, 中文检索词结尾带 空格+翻译 / 空格+英文 / 空格+英语 触发中译英
