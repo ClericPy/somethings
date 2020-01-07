@@ -317,7 +317,7 @@
             shutdown_auto_pager()
             var commenter_auto_np_node = document.getElementById('commenter_auto_np')
             commenter_auto_np_node.checked = false
-            document.getElementById('commenter_status_bar').innerText = '没有下一页'
+            document.getElementById('commenter_status_bar').innerText = '没有下一页, 点击[展示全部]进行复制'
             alert('没有下一页')
             return false
         } else {
