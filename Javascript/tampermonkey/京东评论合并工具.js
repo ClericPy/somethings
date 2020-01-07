@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         京东评论合并工具
 // @namespace    https://github.com/ClericPy/somethings/tree/master/Javascript/tampermonkey
-// @version      1.1
+// @version      1.2
 // @updateURL    https://raw.githubusercontent.com/ClericPy/somethings/master/Javascript/tampermonkey/%E4%BA%AC%E4%B8%9C%E8%AF%84%E8%AE%BA%E5%90%88%E5%B9%B6%E5%B7%A5%E5%85%B7.js
 // @downloadURL  https://raw.githubusercontent.com/ClericPy/somethings/master/Javascript/tampermonkey/%E4%BA%AC%E4%B8%9C%E8%AF%84%E8%AE%BA%E5%90%88%E5%B9%B6%E5%B7%A5%E5%85%B7.js
 // @description  try to take over the world!
@@ -10,24 +10,12 @@
 // @grant        GM_setClipboard
 // ==/UserScript==
 
-/*
 
-主要用途:
-1. 京东的评论每次点翻页太麻烦了, 需要找关键词的时候又不能搜索, 只好全复制出来了
-2. 偶尔需要语料
-
-使用方法
-1. 加载网页以后, 在商品介绍 tab 位置会出现 [收集评论] 按钮, 点击, 等 1 秒
-2. 可以手动点 [手动翻页], 一页页收集, 也可以配置好间隔秒数(默认2秒)点右边 checkbox 自动翻页
-3. 采集结束(或自行停止)后, 点击 [展示全部] 按钮, 则评论会在原来位置对多页合并
-4. 自行去噪过滤(可以通过选项, 也可以自己指定 css), 然后点击 [复制 TEXT] 即可复制到剪贴板
-5. emoji [文本] 点击可以打开 Ubuntu 的 pastebin 来粘贴刚才复制了的文本
-
-*/
 
 (function () {
     'use strict';
     var pages = {}
+
 
     window.auto_pager_running = false
     var css_to_hidden = {}
@@ -39,6 +27,22 @@
     new_style.setAttribute('type', 'text/css')
     new_style.setAttribute('id', 'new_style')
     document.getElementsByTagName('body')[0].appendChild(new_style)
+
+    function alert_doc() {
+        var doc = `
+主要用途:
+1. 京东的评论每次点翻页太麻烦了, 需要找关键词的时候又不能搜索, 只好全复制出来了
+2. 偶尔需要语料
+
+使用方法:
+1. 加载网页以后, 在商品介绍 tab 位置会出现 [收集评论] 按钮, 点击
+2. 可以手动点 [手动翻页], 一页页收集, 也可以配置好间隔秒数(默认2秒)点右边 checkbox 自动翻页
+3. 采集结束(或自行停止)后, 点击 [展示全部] 按钮, 则评论会在原来位置对多页合并
+4. 自行去噪过滤(可以通过选项, 也可以自己指定 css), 然后点击 [复制 TEXT] 即可复制到剪贴板
+5. emoji [文本] 点击可以打开 Ubuntu 的 pastebin 来粘贴刚才复制了的文本    
+        `
+        alert(doc)
+    }
 
     function check_missing_pages() {
         var exist_page_nums = Object.keys(pages).sort()
@@ -256,7 +260,8 @@
     <span style="weight: 1000; margin: 3px;">(s) <b>自动翻页</b>:</span>
     <input type="checkbox" id="commenter_auto_np">
 </label>
-<button id="commenter_crawl_button" disabled style="font-style: inherit; font-variant: inherit; font-weight: inherit; font-stretch: inherit; margin: 3px; overflow: visible; text-transform: none; -webkit-appearance: button; letter-spacing: 0.01em; zoom: 1; line-height: normal; white-space: nowrap; vertical-align: middle; text-align: center; cursor: pointer; -webkit-user-drag: none; user-select: none; box-sizing: border-box; font-size: 100%; padding: 0.5em 1em; color: grey; border: none transparent; background-color: rgb(230, 230, 230); text-decoration: none; border-radius: 2px; font-family: inherit; weight: 1000">手动翻页</button>
+<button id="commenter_crawl_button" disabled style="font-style: inherit; font-variant: inherit; font-weight: inherit; font-stretch: inherit; margin: 3px; overflow: visible; text-transform: none; -webkit-appearance: button; letter-spacing: 0.01em; zoom: 1; line-height: normal; white-space: nowrap; vertical-align: middle; text-align: center; cursor: pointer; -webkit-user-drag: none; user-select: none; box-sizing: border-box; font-size: 100%; padding: 0.5em 1em; color: grey; border: none transparent; background-color: rgb(230, 230, 230); text-decoration: none; border-radius: 2px; font-family: inherit; weight: 1000">手动翻页</button> | 
+<button id="commenter_get_help">帮助</button> | 
 <span id="commenter_status_bar"></span>
 <hr><span><b>去噪:</b></span>
 <label for="commenter_user"><input type="checkbox" checked name=".user-info" id="commenter_user">用户</label>
@@ -275,6 +280,7 @@
         `
         head.insertBefore(filter_node, mc_node)
 
+        document.getElementById('commenter_get_help').addEventListener('click', alert_doc)
         document.getElementById('commenter_crawl_button').addEventListener('click', collect_next_page)
         document.getElementById('commenter_auto_np').addEventListener('change', function () {
             auto_next_page()
