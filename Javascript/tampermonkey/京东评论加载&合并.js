@@ -59,7 +59,6 @@
 
     }
 
-
     function collect_dom_to_pages() {
         var curr_page = document.querySelector('[class="ui-page-curr"]')
         let commenter_crawl_button = document.getElementById('commenter_crawl_button')
@@ -77,8 +76,9 @@
         if (node.length > 0) {
             pages[page] = node
         }
-        if (Object.keys(pages) > 0) {
-            document.getElementById('commenter_show_button').disabled = false
+        if (Object.keys(pages).length == 1) {
+            let show_button = document.getElementById('commenter_show_button')
+            show_button.disabled = false
             show_button.style.color = 'black'
         }
         check_missing_pages()
@@ -225,6 +225,7 @@
         commenter_auto_np_interval.setAttribute('size', 1)
         commenter_auto_np_interval.setAttribute('style', 'text-align: center;')
         head.insertBefore(commenter_auto_np_interval, mc_node)
+
         var filter_node = document.createElement("div")
         filter_node.setAttribute('id', 'commenter_filter')
         filter_node.style.display = 'inline'
@@ -300,9 +301,8 @@
             return false
         } else {
             np.removeAttribute('href')
+            np.click()
         }
-        np.click()
-
         return true
     }
 
