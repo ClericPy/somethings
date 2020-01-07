@@ -1,14 +1,14 @@
 // ==UserScript==
 // @name         dogedoge 搜索增强工具
 // @namespace    https://github.com/ClericPy/somethings/tree/master/Javascript/tampermonkey
-// @version      0.2
+// @version      0.3
 // @description  try to take over the world!
 // @author       Clericpy
 // @match        https://www.dogedoge.com/results*
 // @grant        GM_xmlhttpRequest
 // @connect      dict.youdao.com
-// @updateURL    https://raw.githubusercontent.com/ClericPy/somethings/master/Javascript/tampermonkey/dogedoge%20%E6%90%9C%E7%B4%A2%E6%B7%BB%E5%8A%A0%E7%BA%AF%E8%8B%B1%E6%96%87%E6%90%9C%E7%B4%A2%E8%AF%8D%E8%87%AA%E5%8A%A8%E7%BF%BB%E8%AF%91%2C%20%E7%99%BE%E5%BA%A6%20google%20%E8%B7%B3%E8%BD%AC.js
-// @downloadURL  https://raw.githubusercontent.com/ClericPy/somethings/master/Javascript/tampermonkey/dogedoge%20%E6%90%9C%E7%B4%A2%E6%B7%BB%E5%8A%A0%E7%BA%AF%E8%8B%B1%E6%96%87%E6%90%9C%E7%B4%A2%E8%AF%8D%E8%87%AA%E5%8A%A8%E7%BF%BB%E8%AF%91%2C%20%E7%99%BE%E5%BA%A6%20google%20%E8%B7%B3%E8%BD%AC.js
+// @updateURL    https://raw.githubusercontent.com/ClericPy/somethings/master/Javascript/tampermonkey/dogedoge_search_plus.js
+// @downloadURL  https://raw.githubusercontent.com/ClericPy/somethings/master/Javascript/tampermonkey/dogedoge_search_plus.js
 
 // ==/UserScript==
 
