@@ -59,6 +59,12 @@
 
     }
 
+    function update_non_plus_class_to_item() {
+        document.querySelectorAll('#comment-0 a.comment-plus-icon').forEach(item => {
+            item.parentElement.parentElement.parentElement.classList.add('plus_vip_item')
+        });
+    }
+
     function collect_dom_to_pages() {
         var curr_page = document.querySelector('[class="ui-page-curr"]')
         let commenter_crawl_button = document.getElementById('commenter_crawl_button')
@@ -87,6 +93,7 @@
         } else {
             document.getElementById('commenter_status_bar').innerText = '没有评论了, 点击[展示全部]进行复制'
         }
+        update_non_plus_class_to_item()
     }
 
     function show_pages() {
@@ -110,17 +117,30 @@
         if (backup_np_node) {
             container.appendChild(backup_np_node)
         }
+        update_non_plus_class_to_item()
     }
 
     function copy_html() {
-        var node = document.getElementById('comment-0')
-        GM_setClipboard(node.innerHTML, 'text')
+        let items = document.querySelectorAll('#comment-0>.comment-item')
+        let text = ''
+        let filt_plus = document.getElementById('commenter_non_plus_vip').checked
+        items.forEach(item => {
+            if (!item.classList.contains('plus_vip_item') && filt_plus) {
+                return
+            }
+            text += item.outerHTML
+        });
+        GM_setClipboard(text, 'text')
     }
 
     function copy_text() {
         let items = document.querySelectorAll('#comment-0>.comment-item')
         let text = ''
+        let filt_plus = document.getElementById('commenter_non_plus_vip').checked
         items.forEach(item => {
+            if (!item.classList.contains('plus_vip_item') && filt_plus) {
+                return
+            }
             text += item.innerText.replace('\n', ' ') + '\n'
         });
         GM_setClipboard(text, 'text')
@@ -248,6 +268,7 @@
 <label for="commenter_comment_video"><input type="checkbox" checked name=".J-video-view-wrap" id="commenter_comment_video">视频</label>
 <label for="commenter_comment_tags"><input type="checkbox" checked name=".comment-info" id="commenter_comment_tags">标签</label>
 <label for="commenter_seller_comment"><input type="checkbox" checked name=".recomment-con" id="commenter_seller_comment">卖家回复</label>
+<label for="commenter_non_plus_vip"><input type="checkbox" name=".comment-item:not(.plus_vip_item)" id="commenter_non_plus_vip">非 PLUS 会员</label>
 <label for="commenter_comment_custom">自定义:<input type="text" style="width:4em;" value="" placeholder="css" id="commenter_comment_custom"></label>
         `
         head.insertBefore(filter_node, mc_node)
@@ -257,7 +278,7 @@
             auto_next_page()
         }, false)
 
-        var filter_ids = ['commenter_user', 'commenter_production', 'commenter_time', 'commenter_append', 'commenter_append_time', 'commenter_other', 'commenter_comment', 'commenter_comment_pics', 'commenter_comment_video', 'commenter_comment_tags', 'commenter_seller_comment']
+        var filter_ids = ['commenter_user', 'commenter_production', 'commenter_time', 'commenter_append', 'commenter_append_time', 'commenter_other', 'commenter_comment', 'commenter_comment_pics', 'commenter_comment_video', 'commenter_comment_tags', 'commenter_seller_comment', 'commenter_non_plus_vip']
         filter_ids.forEach(eid => {
             let node = document.getElementById(eid)
             css_to_hidden[node.name] = node.checked
@@ -315,6 +336,8 @@
         let options = {
             'childList': true,
             'subtree': true,
+            // 'characterData': true,
+            // 'attributes': true,
         };
         var c0 = document.getElementById('comment-0')
         // observer.observe(document.querySelector('#comment>.mc'), options)
