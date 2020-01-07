@@ -312,8 +312,8 @@
     }
 
     function collect_next_page() {
-        var np = document.getElementsByClassName('ui-pager-next')[0] || ''
-        if (np == '') {
+        var np = document.querySelector('#comment .ui-pager-next')
+        if (!np) {
             shutdown_auto_pager()
             var commenter_auto_np_node = document.getElementById('commenter_auto_np')
             commenter_auto_np_node.checked = false
