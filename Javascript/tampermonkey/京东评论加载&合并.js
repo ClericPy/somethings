@@ -66,7 +66,7 @@
     }
 
     function collect_dom_to_pages() {
-        var curr_page = document.querySelector('[class="ui-page-curr"]')
+        var curr_page = document.querySelector('#comment [class="ui-page-curr"]')
         let commenter_crawl_button = document.getElementById('commenter_crawl_button')
         if (!curr_page) {
             return
