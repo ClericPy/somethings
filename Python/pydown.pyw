@@ -80,11 +80,42 @@ def open_dir(path: Path = SAVING_DIR.absolute()):
     try:
         subprocess.Popen(['explorer.exe', str(path)], shell=False)
     except FileNotFoundError as e:
-        GUI.msg = e
+        GUI.msg = str(e)
+
+
+class Sound(object):
+
+    def __init__(self):
+        try:
+            import winsound
+            self.winsound = winsound
+            self.beep(1, 37, 0)
+        except ImportError:
+            self.winsound = None
+
+    def start(self):
+        self.beep(1, 1000, 150)
+
+    def ok(self):
+        self.beep(2, 1000, 150)
+
+    def error(self):
+        self.play_sound('SystemHand')
+
+    def play_sound(self, msg):
+        if self.winsound:
+            self.winsound.PlaySound(msg, self.winsound.SND_ASYNC)
+
+    def beep(self, n, f, d, interval=0.1):
+        if self.winsound:
+            for _ in range(n):
+                self.winsound.Beep(f, d)
+                time.sleep(interval)
 
 
 class GUI(object):
     msg = ''
+    sound = Sound()
 
     def __init__(self):
         self.window = None
@@ -469,7 +500,7 @@ class GUI(object):
                 try:
                     startfile(task.file_path)
                 except OSError as e:
-                    GUI.msg = e
+                    GUI.msg = str(e)
             else:
                 task.switch_pause()
 
@@ -536,7 +567,7 @@ class Task(object):
             self.wait_pause()
             r = self.session.get(self.meta.url, timeout=(5, None), stream=True)
         except requests.RequestException as e:
-            GUI.msg = e
+            GUI.msg = str(e)
             self.state = str(e)
             return
         if not re.match(r'.*\.\w+$', self.meta.file_name):
@@ -547,6 +578,7 @@ class Task(object):
         if self.file_path.is_file():
             self.state = 'Exist'
             self.status = 'ok'
+            GUI.sound.ok()
             return
         self.size = int(r.headers.get('Content-Length') or 0)
         start_ts = time.time()
@@ -582,6 +614,10 @@ class Task(object):
                     start_size = self.current_size
             else:
                 self.status = 'ok'
+                GUI.sound.ok()
+        except Exception as err:
+            self.status = str(err)
+            GUI.sound.error()
         finally:
             self.f.close()
         self.timeleft = '0 s'
@@ -777,7 +813,7 @@ class Downloader(object):
             return parser(url)
         except (json.JSONDecodeError, IndexError, ValueError, IOError, KeyError,
                 ZeroDivisionError) as e:
-            GUI.msg = e
+            GUI.msg = str(e)
             traceback.print_exc()
             return
 
@@ -789,7 +825,7 @@ class Downloader(object):
                 if 'html5player.setVideoUrlHigh' in scode:
                     break
             except requests.RequestException as e:
-                GUI.msg = e
+                GUI.msg = str(e)
                 traceback.print_exc()
                 continue
         else:
@@ -810,7 +846,7 @@ class Downloader(object):
                 if 'qualityItems_' in scode:
                     break
             except requests.RequestException as e:
-                GUI.msg = e
+                GUI.msg = str(e)
                 traceback.print_exc()
                 continue
         else:
@@ -855,6 +891,7 @@ class Downloader(object):
         task.start()
         self.tasks.append(task)
         GUI.msg = 'Add new task success.'
+        GUI.sound.start()
         return task
 
     def shutdown(self):
