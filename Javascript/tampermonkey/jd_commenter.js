@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         京东评论合并工具
 // @namespace    https://github.com/ClericPy/somethings
-// @version      1.8
+// @version      1.9
 // @updateURL    https://raw.githubusercontent.com/ClericPy/somethings/master/Javascript/tampermonkey/jd_commenter.js
 // @downloadURL  https://raw.githubusercontent.com/ClericPy/somethings/master/Javascript/tampermonkey/jd_commenter.js
 // @description  try to take over the world!
@@ -285,7 +285,7 @@
 <label for="commenter_time"><input type="checkbox" checked name=".order-info>span:last-child" id="commenter_time">时间</label>
 <label for="commenter_append"><input type="checkbox" checked name=".append-comment" id="commenter_append">追评</label>
 <label for="commenter_append_time"><input type="checkbox" checked name=".append-comment>.append-time" id="commenter_append_time">追评时间</label>
-<label for="commenter_other"><input type="checkbox" checked name=".comment-op,.user-level,.comment-star" id="commenter_other">冗余</label>
+<label for="commenter_other"><input type="checkbox" checked name=".comment-op,.user-level,.comment-star,.comment-message" id="commenter_other">冗余</label>
 <label for="commenter_comment"><input type="checkbox" name=".comment-con" id="commenter_comment">文本</label>
 <label for="commenter_comment_pics"><input type="checkbox" checked name=".pic-list" id="commenter_comment_pics">图片</label>
 <label for="commenter_comment_video"><input type="checkbox" checked name=".J-video-view-wrap" id="commenter_comment_video">视频</label>
