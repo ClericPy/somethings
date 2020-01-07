@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         京东评论合并工具
 // @namespace    https://github.com/ClericPy/somethings
-// @version      2.0
+// @version      2.1
 // @updateURL    https://raw.githubusercontent.com/ClericPy/somethings/master/Javascript/tampermonkey/jd_commenter.js
 // @downloadURL  https://raw.githubusercontent.com/ClericPy/somethings/master/Javascript/tampermonkey/jd_commenter.js
 // @description  try to take over the world!
@@ -96,6 +96,12 @@
         commenter_crawl_button.innerText = '手动翻页 ' + page
         var node = document.querySelectorAll('#comment [style="display: block;"][data-tab="item"]>div.comment-item')
         if (node.length > 0) {
+            let num = 0
+            let page_num = pages.length
+            for (const items of Object.values(pages)) {
+                num += items.length
+            }
+            document.getElementById('commenter_status_bar').innerText = ' 已采集 ' + Object.keys(pages).length + ' 页 ' + num
             pages[page] = node
         }
         if (Object.keys(pages).length == 1) {
