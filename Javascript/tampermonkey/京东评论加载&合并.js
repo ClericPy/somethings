@@ -171,17 +171,11 @@
         update_new_style()
     }
 
-    function commenter_collect_comment() {
+    function commenter_collect_layouts() {
 
         var head = document.getElementById('comment')
         var mc_node = document.querySelector('#comment .mc')
-        let observer = new MutationObserver(collect_dom_to_pages);
 
-        let options = {
-            'childList': true,
-            'attributes': true
-        };
-        observer.observe(document.getElementById('comment-0'), options);
         var hr = document.createElement("hr");
         head.insertBefore(hr, mc_node)
 
@@ -258,7 +252,7 @@
     <span style="weight: 1000; margin: 3px;">(s) <b>自动翻页</b>:</span>
     <input type="checkbox" id="commenter_auto_np">
 </label>
-<button id="commenter_crawl_button" style="font-style: inherit; font-variant: inherit; font-weight: inherit; font-stretch: inherit; margin: 3px; overflow: visible; text-transform: none; -webkit-appearance: button; letter-spacing: 0.01em; zoom: 1; line-height: normal; white-space: nowrap; vertical-align: middle; text-align: center; cursor: pointer; -webkit-user-drag: none; user-select: none; box-sizing: border-box; font-size: 100%; padding: 0.5em 1em; color: rgba(0, 0, 0, 0.8); border: none transparent; background-color: rgb(230, 230, 230); text-decoration: none; border-radius: 2px; font-family: inherit; display: none;">手动翻页</button>
+<button id="commenter_crawl_button" disabled style="font-style: inherit; font-variant: inherit; font-weight: inherit; font-stretch: inherit; margin: 3px; overflow: visible; text-transform: none; -webkit-appearance: button; letter-spacing: 0.01em; zoom: 1; line-height: normal; white-space: nowrap; vertical-align: middle; text-align: center; cursor: pointer; -webkit-user-drag: none; user-select: none; box-sizing: border-box; font-size: 100%; padding: 0.5em 1em; color: grey; border: none transparent; background-color: rgb(230, 230, 230); text-decoration: none; border-radius: 2px; font-family: inherit; weight: 1000">手动翻页</button>
 <span id="commenter_status_bar"></span>
 <hr><span><b>去噪:</b></span>
 <label for="commenter_user"><input type="checkbox" checked name=".user-info" id="commenter_user">用户</label>
@@ -302,7 +296,9 @@
         })
         collect_dom_to_pages()
         setTimeout(() => {
-            document.getElementById('commenter_crawl_button').style.display = 'inline-block'
+            let commenter_crawl_button = document.getElementById('commenter_crawl_button')
+            commenter_crawl_button.disabled = false
+            commenter_crawl_button.style.color = 'black'
             collect_dom_to_pages()
         }, 1000);
     }
@@ -328,14 +324,32 @@
         return true
     }
 
-    function setup_commenter_collect_comment() {
+    function setup_commenter_collect_layouts() {
         if (document.getElementById('commenter_auto_np_interval')) {
             return
         }
         document.querySelector('[data-anchor="#comment"]').click()
-        setTimeout(() => {
-            commenter_collect_comment()
-        }, 10);
+        let observer = new MutationObserver(collect_dom_to_pages);
+        let options = {
+            'childList': true,
+            'subtree': true,
+        };
+        var c0 = document.getElementById('comment-0')
+        // observer.observe(document.querySelector('#comment>.mc'), options)
+        var tries = 0
+        var checkExist = setInterval(function () {
+            tries += 1
+            if (c0) {
+                // console.log("Exists!");
+                observer.observe(c0, options);
+                commenter_collect_layouts()
+                clearInterval(checkExist);
+            }
+            if (tries > 20) {
+                clearInterval(checkExist);
+            }
+        }, 200);
+
     }
 
     function setup() {
@@ -345,7 +359,7 @@
         button.setAttribute('id', 'commenter_collect')
         button.setAttribute('style', button_style)
         button.style.zoom = '1.3'
-        button.addEventListener('click', setup_commenter_collect_comment)
+        button.addEventListener('click', setup_commenter_collect_layouts)
         tab.appendChild(button)
     }
 
