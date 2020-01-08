@@ -94,7 +94,7 @@ class Sound(object):
             self.winsound = None
 
     def start(self):
-        self.beep(1, 1000, 150)
+        self.beep(1, 1000, 150, 0.2)
 
     def ok(self):
         self.beep(2, 1000, 150)
@@ -569,6 +569,7 @@ class Task(object):
         except requests.RequestException as e:
             GUI.msg = str(e)
             self.state = str(e)
+            r.close()
             return
         if not re.match(r'.*\.\w+$', self.meta.file_name):
             ext = (r.headers.get('content-type') or 'text/txt').split(
@@ -619,6 +620,7 @@ class Task(object):
             self.status = str(err)
             GUI.sound.error()
         finally:
+            r.close()
             self.f.close()
         self.timeleft = '0 s'
         if self.status == 'ok':
