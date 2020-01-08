@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         京东评论合并工具
 // @namespace    https://github.com/ClericPy/somethings
-// @version      2.1
+// @version      2.2
 // @updateURL    https://raw.githubusercontent.com/ClericPy/somethings/master/Javascript/tampermonkey/jd_commenter.js
 // @downloadURL  https://raw.githubusercontent.com/ClericPy/somethings/master/Javascript/tampermonkey/jd_commenter.js
 // @description  try to take over the world!
@@ -119,9 +119,40 @@
         add_class_for_filter()
     }
 
+    function filt_by_text() {
+        let commenter_text_filter = document.getElementById('commenter_text_filter')
+        let text_filters = []
+        if (commenter_text_filter) {
+            text_filters = commenter_text_filter.value.split(' ')
+            if (text_filters == ['']) {
+                text_filters = []
+            }
+        }
+        for (const item of document.querySelectorAll('#comment [style="display: block;"][data-tab="item"]>.comment-item')) {
+            var item_html = item.innerHTML
+            if (!text_filters) {
+                item.classList.remove('commenter_filt_by_text')
+            }
+            for (const text of text_filters) {
+                if (text[0] == '-') {
+                    if (item_html.includes(text.slice(1, text.length))) {
+                        item.classList.add('commenter_filt_by_text')
+                        break
+                    }
+                } else if (!item_html.includes(text)) {
+                    item.classList.add('commenter_filt_by_text')
+                    break
+                } else {
+                    item.classList.remove('commenter_filt_by_text')
+                }
+            }
+        }
+    }
+
     function show_pages() {
         var container = document.querySelector('#comment [style="display: block;"][data-tab="item"]')
         if (!container) {
+            // 备用 container
             var mc_node = document.querySelector('#comment .mc')
             if (window.backup_mc_innerHTML) {
                 mc_node.innerHTML = window.backup_mc_innerHTML
@@ -141,6 +172,7 @@
             container.appendChild(backup_np_node)
         }
         add_class_for_filter()
+        filt_by_text()
     }
 
     function copy_html() {
@@ -150,13 +182,16 @@
         let filt_reply = document.getElementById('commenter_non_reply').checked
         let filt_like = document.getElementById('commenter_non_like').checked
         items.forEach(item => {
-            if (!item.classList.contains('commenter_plus_vip_item') && filt_plus) {
+            if (filt_plus && !item.classList.contains('commenter_plus_vip_item')) {
                 return
             }
-            if (!item.classList.contains('commenter_with_reply') && filt_reply) {
+            if (filt_reply && !item.classList.contains('commenter_with_reply')) {
                 return
             }
-            if (!item.classList.contains('commenter_with_like') && filt_like) {
+            if (filt_like && !item.classList.contains('commenter_with_like')) {
+                return
+            }
+            if (item.classList.contains('commenter_filt_by_text')) {
                 return
             }
             text += item.outerHTML
@@ -171,13 +206,16 @@
         let filt_reply = document.getElementById('commenter_non_reply').checked
         let filt_like = document.getElementById('commenter_non_like').checked
         items.forEach(item => {
-            if (!item.classList.contains('commenter_plus_vip_item') && filt_plus) {
+            if (filt_plus && !item.classList.contains('commenter_plus_vip_item')) {
                 return
             }
-            if (!item.classList.contains('commenter_with_reply') && filt_reply) {
+            if (filt_reply && !item.classList.contains('commenter_with_reply')) {
                 return
             }
-            if (!item.classList.contains('commenter_with_like') && filt_like) {
+            if (filt_like && !item.classList.contains('commenter_with_like')) {
+                return
+            }
+            if (item.classList.contains('commenter_filt_by_text')) {
                 return
             }
             text += item.innerText.replace('\n', ' ') + '\n'
@@ -213,7 +251,7 @@
     }
 
     function update_new_style() {
-        let hidden_list = []
+        let hidden_list = ['.commenter_filt_by_text']
         Object.keys(css_to_hidden).forEach(key => {
             let value = css_to_hidden[key]
             if (value) {
@@ -309,13 +347,19 @@
 <label for="commenter_comment_tags"><input type="checkbox" checked name=".comment-info" id="commenter_comment_tags">标签</label>
 <label for="commenter_seller_comment"><input type="checkbox" checked name=".recomment-con" id="commenter_seller_comment">卖家回复</label>
 <label for="commenter_non_plus_vip"><input type="checkbox" name=".comment-item:not(.commenter_plus_vip_item)" title="如果选中, 则只显示 Plus 会员的评论" id="commenter_non_plus_vip">非 PLUS 会员</label>
+<br>
 <label for="commenter_non_reply"><input type="checkbox" name=".comment-item:not(.commenter_with_reply)" title="如果选中, 则只显示有回复的评论" id="commenter_non_reply">无回复</label>
 <label for="commenter_non_like"><input type="checkbox" name=".comment-item:not(.commenter_with_like)" title="如果选中, 则只显示有点赞的评论" id="commenter_non_like">无赞</label>
-<label for="commenter_comment_custom">自定义 CSS:<input type="text" style="width:4em;" value="" placeholder="" id="commenter_comment_custom"></label>
+<label for="commenter_comment_custom"><input type="text" style="width:10em;" value="" placeholder="自定义 CSS 过滤" id="commenter_comment_custom"></label>
+<label for="commenter_text_filter"><input type="text" style="width:15em;" value="" placeholder="过滤词, 如'手机 -三星'" title="过滤词, 如'手机 -三星'" id="commenter_text_filter"></label>
+
+
+<hr>
         `
         head.insertBefore(filter_node, mc_node)
 
         document.getElementById('commenter_get_help').addEventListener('click', alert_doc)
+        document.getElementById('commenter_text_filter').addEventListener('input', filt_by_text)
         document.getElementById('commenter_crawl_button').addEventListener('click', collect_next_page)
         document.getElementById('commenter_auto_np').addEventListener('change', function () {
             auto_next_page()
@@ -332,7 +376,7 @@
         });
         let commenter_comment_custom = document.getElementById('commenter_comment_custom')
 
-        commenter_comment_custom.addEventListener('change', function () {
+        commenter_comment_custom.addEventListener('input', function () {
             custom_css_to_hidden = this.value
             this.title = this.value
             update_new_style()
