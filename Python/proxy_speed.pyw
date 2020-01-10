@@ -48,7 +48,7 @@ def async_print():
             err = ''
         cost = [int(r.task_cost_time * 1000) for r in tasks]
         avg_cost = int(sum(cost) / len(tasks))
-        print(f'{sig}[{ttime()}] {ok}(ms): {cost} => {avg_cost} {err}', end=' ')
+        print(f'{sig}[{ttime()}] {ok}: {avg_cost}ms {cost} {err}', end=' ')
         cd(INTERVAL)
 
 
