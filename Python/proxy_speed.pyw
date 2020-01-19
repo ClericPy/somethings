@@ -14,6 +14,7 @@ PROXY = 'socks5://127.0.0.1:1080'
 INTERVAL = 2
 TRIALS = 3
 TIMEOUT = 2
+STATUS_COLOR = ''
 
 
 def get_screensize():
@@ -23,7 +24,21 @@ def get_screensize():
     return list(int(i * 0.5) for i in screensize)
 
 
-def async_print():
+def update_color(window, avg_cost):
+    if avg_cost < 150:
+        color = '#C6FF00'
+    elif avg_cost < 350:
+        color = '#00C853'
+    elif avg_cost < 550:
+        color = '#FFCA28'
+    elif avg_cost < 1000:
+        color = '#FF5722'
+    else:
+        color = '#9E9E9E'
+    window['status_bar'].Update(background_color=color)
+
+
+def async_print(window):
     while 1:
         req = tPool()
         tasks = [
@@ -49,6 +64,7 @@ def async_print():
         cost = [int(r.task_cost_time * 1000) for r in tasks]
         avg_cost = int(sum(cost) / len(tasks))
         print(f'{sig}[{ttime()}] {ok}: {avg_cost}ms {cost} {err}', end=' ')
+        update_color(window, avg_cost)
         cd(INTERVAL)
 
 
@@ -100,7 +116,8 @@ def main():
                        key='timeout',
                        change_submits=True,
                        font=('mono', 16)),
-               ], [sg.Output(size=(999, 999), key='output', font=("", 16))]]
+               ], [sg.StatusBar('', size=(999, 1), key='status_bar')],
+               [sg.Output(size=(999, 999), key='output', font=("", 16))]]
     window = sg.Window(
         title='Test Speed',
         layout=layouts,
@@ -108,7 +125,7 @@ def main():
     )
     window.Read(timeout=0)
     print('=' * 40)
-    Thread(target=async_print, daemon=True).start()
+    Thread(target=async_print, args=(window,), daemon=True).start()
     while 1:
         event, values = window.Read()
         # print(event, values)

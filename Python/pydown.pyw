@@ -231,7 +231,14 @@ class GUI(object):
                 if self.downloader.choose_parser(url):
                     self.add_task(url)
                 else:
-                    sg.Popup(f'Not support this url: {url}')
+                    ok = sg.PopupYesNo(
+                        f'Not support this url: {url}, force download?')
+                    if ok == 'Yes':
+                        if url.startswith('http'):
+                            meta = VideoMeta(url, url)
+                            self.downloader.download(url=url, meta=meta)
+                        else:
+                            sg.PopupOK('invalid url')
                 continue
             elif event == 'view_downloads':
                 open_dir()
@@ -884,8 +891,8 @@ class Downloader(object):
             url, saving_path = self.q.get()
             self.download(url, saving_path)
 
-    def download(self, url, saving_path=SAVING_DIR):
-        meta = self.get_meta(url)
+    def download(self, url, saving_path=SAVING_DIR, meta=None):
+        meta = self.get_meta(url) if meta is None else meta
         if not meta:
             return
         # add download task
