@@ -40,6 +40,7 @@ def update_color(window, avg_cost):
 
 def async_print(window):
     while 1:
+        err = ''
         req = tPool()
         tasks = [
             req.get(
@@ -61,7 +62,7 @@ def async_print(window):
                 break
         else:
             err = ''
-        cost = [int(r.task_cost_time * 1000) for r in tasks]
+        cost = [int((r.task_cost_time or 9) * 1000) for r in tasks]
         avg_cost = int(sum(cost) / len(tasks))
         print(f'{sig}[{ttime()}] {ok}: {avg_cost}ms {cost} {err}', end=' ')
         update_color(window, avg_cost)
