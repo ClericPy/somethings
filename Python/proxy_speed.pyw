@@ -31,7 +31,7 @@ def update_color(window, avg_cost):
         color = '#00C853'
     elif avg_cost < 550:
         color = '#FFCA28'
-    elif avg_cost < 1000:
+    elif avg_cost < 1500:
         color = '#FF5722'
     else:
         color = '#9E9E9E'
@@ -58,7 +58,7 @@ def async_print(window):
 
         for r in tasks:
             if not r.x:
-                err = r.text
+                err = r.error.__class__.__name__
                 break
         else:
             err = ''
