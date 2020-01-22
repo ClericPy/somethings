@@ -10,7 +10,7 @@ from torequests import tPool
 from torequests.utils import UA, ttime
 
 TESTURL = 'https://s.ytimg.com/yts/img/favicon-vfl8qSV2F.ico'
-PROXY = 'socks5://127.0.0.1:1080'
+PROXY = 'http://127.0.0.1:1080'
 INTERVAL = 2
 TRIALS = 3
 TIMEOUT = 2
