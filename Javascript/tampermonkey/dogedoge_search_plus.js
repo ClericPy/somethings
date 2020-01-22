@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         dogedoge 搜索增强工具
 // @namespace    https://github.com/ClericPy/somethings
-// @version      0.5
+// @version      0.6
 // @description  try to take over the world!
 // @author       Clericpy
 // @match        https://www.dogedoge.com/results*
@@ -85,13 +85,13 @@
     var duckbar_static = document.getElementById("duckbar_static")
     var node = document.createElement('a')
     node.setAttribute('href', 'https://www.baidu.com/s?wd=' + encodeURI(word))
-    node.setAttribute('target', '_blank')
+    // node.setAttribute('target', '_blank')
     node.setAttribute('style', button_style)
     node.innerText = '百度'
     duckbar_static.appendChild(node);
     var node2 = document.createElement('a')
     node2.setAttribute('href', 'https://www.google.com/search?q=' + encodeURI(word))
-    node2.setAttribute('target', '_blank')
+    // node2.setAttribute('target', '_blank')
     node2.setAttribute('style', button_style)
     node2.innerText = 'Google'
     duckbar_static.appendChild(node2);
