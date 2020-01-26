@@ -13,8 +13,9 @@ TESTURL = 'https://s.ytimg.com/yts/img/favicon-vfl8qSV2F.ico'
 PROXY = 'http://127.0.0.1:1080'
 INTERVAL = 2
 TRIALS = 3
-TIMEOUT = 2
+TIMEOUT = 1
 STATUS_COLOR = ''
+VERSION = '0.0.1'
 
 
 def get_screensize():
@@ -31,7 +32,7 @@ def update_color(window, avg_cost):
         color = '#00C853'
     elif avg_cost < 550:
         color = '#FFCA28'
-    elif avg_cost < 1500:
+    elif avg_cost < 1000:
         color = '#FF5722'
     else:
         color = '#9E9E9E'
@@ -55,13 +56,11 @@ def async_print(window):
         else:
             ok = '[Fail]'
             sig = '×'
-
-        for r in tasks:
-            if not r.x:
-                err = r.error.__class__.__name__
-                break
-        else:
-            err = ''
+        if ok == '[Fail]':
+            for r in tasks:
+                if not r.x:
+                    err = r.error.__class__.__name__
+                    break
         cost = [int((r.task_cost_time or 9) * 1000) for r in tasks]
         avg_cost = int(sum(cost) / len(tasks))
         print(f'{sig}[{ttime()}] {ok}: {avg_cost}ms {cost} {err}', end=' ')
@@ -120,7 +119,7 @@ def main():
                ], [sg.StatusBar('', size=(999, 1), key='status_bar')],
                [sg.Output(size=(999, 999), key='output', font=("", 16))]]
     window = sg.Window(
-        title='Test Speed',
+        title=f'Speed Tester v{VERSION}',
         layout=layouts,
         size=get_screensize(),
     )
