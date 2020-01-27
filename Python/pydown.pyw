@@ -186,6 +186,11 @@ class GUI(object):
             url = pyperclip.paste()
         if not url.startswith('http'):
             return
+        if self.downloader.only_copy:
+            meta = self.downloader.get_meta(url)
+            if meta:
+                pyperclip.copy(meta.url)
+            return
         if self.downloader.use_thunder:
             meta = self.downloader.get_meta(url)
             pyperclip.copy(meta.file_name)
@@ -308,6 +313,9 @@ class GUI(object):
                 continue
             elif event == 'use_thunder':
                 self.update_use_thunder(values[event])
+                continue
+            elif event == 'only_copy':
+                self.downloader.only_copy = values[event]
                 continue
         self.shutdown()
 
@@ -490,6 +498,17 @@ class GUI(object):
                     'Use Thunder.exe to download, file title will be set to your clipboard, and be reset to null after 5 secs (set proxy by yourself)',
                     text_color='black',
                     key='use_thunder',
+                    font=('Mono', 15),
+                ),
+                sg.Checkbox(
+                    'OnlyCopy',
+                    change_submits=1,
+                    default=self.downloader.only_copy,
+                    background_color=WINDOW_BG,
+                    tooltip=
+                    'Do not download, only copy result url to clipboard.',
+                    text_color='black',
+                    key='only_copy',
                     font=('Mono', 15),
                 ),
                 sg.Text(
@@ -786,6 +805,7 @@ class Downloader(object):
     def __init__(self):
         self.thunder = self.get_thunder()
         self.use_thunder = bool(self.thunder)
+        self.only_copy = True
         self.session = self.get_session()
         self.tasks = []
         self.parse_rules = {
@@ -888,10 +908,13 @@ class Downloader(object):
         parser = self.choose_parser(url)
         # print(parser, 'for', url)
         if not parser:
-            GUI.msg = 'No parser rule matched.'
+            # GUI.msg = 'No parser rule matched.'
             return
         try:
-            return parser(url)
+            result = parser(url)
+            GUI.msg = f'[Got meta]: {result.title}'
+            GUI.sound.start()
+            return result
         except (json.JSONDecodeError, IndexError, ValueError, IOError, KeyError,
                 ZeroDivisionError) as e:
             GUI.msg = str(e)
@@ -972,7 +995,6 @@ class Downloader(object):
         task.start()
         self.tasks.append(task)
         GUI.msg = 'Add new task success.'
-        GUI.sound.start()
         return task
 
     def shutdown(self):
