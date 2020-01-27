@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # pip install pyperclip requests[socks] PySimpleGUI
 
+import base64
 import hashlib
 import inspect
 import json
@@ -13,9 +14,10 @@ from functools import partial
 from os import startfile
 from pathlib import Path
 from queue import Queue
-from threading import Event, Thread
+from threading import Event, Thread, Timer
 from urllib.parse import urlparse
 
+import psutil
 import pyperclip
 import PySimpleGUI as sg
 import requests
@@ -36,6 +38,7 @@ WATCH_CLIP = Event()
 WATCH_CLIP.set()
 REFRESH_TABLE_INTERVAL = 2.5
 CLIPBOARD_LISTENER_INTERVAL = 0.2
+VERSION = '0.0.1'
 # ===========
 PROXY = '127.0.0.1:1080'
 REQUEST_PROXY = {'https': f'http://{PROXY}', 'http': f'http://{PROXY}'}
@@ -81,6 +84,12 @@ def open_dir(path: Path = SAVING_DIR.absolute()):
         subprocess.Popen(['explorer.exe', str(path)], shell=False)
     except FileNotFoundError as e:
         GUI.msg = str(e)
+
+
+def clear_clipboard(second=5):
+    timer = Timer(5, pyperclip.copy, [''])
+    timer.setDaemon(True)
+    timer.start()
 
 
 class Sound(object):
@@ -175,9 +184,17 @@ class GUI(object):
     def add_task(self, url=None):
         if not url:
             url = pyperclip.paste()
-        task = self.downloader.add_queue(url, self.get_saving_path(url))
-        if task:
-            self.refresh_table()
+        if not url.startswith('http'):
+            return
+        if self.downloader.use_thunder:
+            meta = self.downloader.get_meta(url)
+            pyperclip.copy(meta.file_name)
+            clear_clipboard()
+            self.downloader.add_thunder_task(meta.url, meta.file_name)
+        else:
+            task = self.downloader.add_queue(url, self.get_saving_path(url))
+            if task:
+                self.refresh_table()
 
     def get_selected_tasks(self):
         tasks = []
@@ -289,7 +306,24 @@ class GUI(object):
                 self.window['use_proxy'].Update(value=False)
                 REQUEST_PROXY.clear()
                 continue
+            elif event == 'use_thunder':
+                self.update_use_thunder(values[event])
+                continue
         self.shutdown()
+
+    def update_use_thunder(self, use_thunder):
+        if not self.downloader.thunder:
+            thunder_path = self.downloader.get_thunder()
+            if not thunder_path:
+                thunder_path = sg.PopupGetFile(
+                    "Could not find the thunder.exe",
+                    button_color=GLOBAL_BUTTON_COLOR)
+            if thunder_path and Path(thunder_path).is_file():
+                self.downloader.thunder = thunder_path
+        self.downloader.use_thunder = use_thunder
+        if use_thunder and not self.downloader.thunder:
+            # uncheck for no thunder exe
+            self.window['use_thunder'].Update(False)
 
     def shutdown(self):
         if self._shutdown:
@@ -447,8 +481,20 @@ class GUI(object):
                     font=('Mono', 15),
                     tooltip=' Sub folder to save files, url netloc to default.',
                 ),
+                sg.Checkbox(
+                    'Thunder',
+                    change_submits=1,
+                    default=self.downloader.use_thunder,
+                    background_color=WINDOW_BG,
+                    tooltip=
+                    'Use Thunder.exe to download, file title will be set to your clipboard, and be reset to null after 5 secs (set proxy by yourself)',
+                    text_color='black',
+                    key='use_thunder',
+                    font=('Mono', 15),
+                ),
                 sg.Text(
-                    'Mono',
+                    '',
+                    font=('Mono', 12),
                     key='status_bar',
                     text_color='black',
                     background_color=WINDOW_BG,
@@ -487,7 +533,7 @@ class GUI(object):
             ],
         ]
         self.window = sg.Window(
-            f'Downloader ({SAVING_DIR})',
+            f'Downloader ({SAVING_DIR}) v{VERSION}',
             self.layouts,
             size=half_screen_size,
             return_keyboard_events=True,
@@ -738,6 +784,8 @@ def find_one(pattern, string, index=1, **kwargs):
 class Downloader(object):
 
     def __init__(self):
+        self.thunder = self.get_thunder()
+        self.use_thunder = bool(self.thunder)
         self.session = self.get_session()
         self.tasks = []
         self.parse_rules = {
@@ -807,6 +855,30 @@ class Downloader(object):
         except requests.exceptions.RequestException:
             GUI.msg = 'Check proxy fail.'
             return False
+
+    @staticmethod
+    def get_thunder_url(url):
+        return ("thunder://".encode("utf-8") + base64.b64encode(
+            ('AA' + url + 'ZZ').encode("utf-8"))).decode("utf-8")
+
+    @staticmethod
+    def get_thunder():
+        for proc in psutil.process_iter():
+            try:
+                pname = proc.name()
+                if pname == 'Thunder.exe':
+                    return proc.cmdline()[0]
+            except Exception:
+                pass
+        # else:
+        #     raise FileNotFoundError
+
+    def add_thunder_task(self, url, file_name):
+        thunder_url = self.get_thunder_url(url)
+        if self.thunder and thunder_url:
+            subprocess.Popen([
+                self.thunder, '-StartType:DesktopIcon', thunder_url, file_name
+            ]).wait()
 
     def choose_parser(self, url):
         host_md5 = self.get_host_md5(url)
