@@ -3,10 +3,6 @@
 
 Store some scripts or snippets written by myself. Some GUI apps will build windows exe files.
 
-## Downloads
-
-https://github.com/ClericPy/somethings/releases
-
 ## Features
 
 1. **Python**
@@ -28,8 +24,15 @@ https://github.com/ClericPy/somethings/releases
       > Terminal UI for PyInstaller.
       >
       > 1. pip install pyinstallerui -U
-      >
-      > 2. python -m pyinstallerui
+      >2. python -m pyinstallerui
+      
+   4. Bookmarks checker
+
+      > 1. export bookmark.html
+      > 2. python bookmark_checker.py
+      > 3. drag bookmark.html to terminal for the path
+      > 4. wait for checking finished
+      > 5. open the bookmark.html in the browser
 
 2. **Javascript**
    1. tampermonkey (Chrome -> Tampermonkey -> Utilities -> Install from URL)
@@ -47,3 +50,7 @@ https://github.com/ClericPy/somethings/releases
          > 用途: doge 搜索添加纯英文搜索词自动翻译, 百度 google 跳转
          >
          > 纯英文检索会触发英译中, 中文检索词结尾带 空格+翻译 / 空格+英文 / 空格+英语 触发中译英
+
+## Build
+
+https://github.com/ClericPy/somethings/releases
