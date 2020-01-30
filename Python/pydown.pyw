@@ -38,7 +38,7 @@ WATCH_CLIP = Event()
 WATCH_CLIP.set()
 REFRESH_TABLE_INTERVAL = 2.5
 CLIPBOARD_LISTENER_INTERVAL = 0.2
-VERSION = '0.0.1'
+VERSION = '0.0.2'
 # ===========
 PROXY = '127.0.0.1:1080'
 REQUEST_PROXY = {'https': f'http://{PROXY}', 'http': f'http://{PROXY}'}
@@ -466,7 +466,7 @@ class GUI(object):
                     change_submits=1,
                     default=1,
                     background_color=WINDOW_BG,
-                    tooltip='Run the downloader at first to enable it',
+                    tooltip=' Run the downloader before using it ',
                     text_color='black',
                     key='default_downloader',
                     group_id='choose_downloader',
@@ -476,7 +476,7 @@ class GUI(object):
                 sg.Radio(
                     'Thunder',
                     change_submits=1,
-                    default=0,
+                    default=bool(self.downloader.thunder_downloader),
                     background_color=WINDOW_BG,
                     tooltip='Run the downloader at first to enable it',
                     text_color='black',
@@ -488,7 +488,7 @@ class GUI(object):
                 sg.Radio(
                     'FDM',
                     change_submits=1,
-                    default=0,
+                    default=bool(self.downloader.fdm_downloader),
                     background_color=WINDOW_BG,
                     tooltip='Run the downloader at first to enable it',
                     text_color='black',
