@@ -191,15 +191,9 @@ class GUI(object):
             if meta:
                 pyperclip.copy(meta.url)
             return
-        if self.downloader.use_thunder:
-            meta = self.downloader.get_meta(url)
-            pyperclip.copy(meta.file_name)
-            clear_clipboard()
-            self.downloader.add_thunder_task(meta.url, meta.file_name)
-        else:
-            task = self.downloader.add_queue(url, self.get_saving_path(url))
-            if task:
-                self.refresh_table()
+        task = self.downloader.current_downloader(url)
+        if task:
+            self.refresh_table()
 
     def get_selected_tasks(self):
         tasks = []
@@ -311,27 +305,21 @@ class GUI(object):
                 self.window['use_proxy'].Update(value=False)
                 REQUEST_PROXY.clear()
                 continue
-            elif event == 'use_thunder':
-                self.update_use_thunder(values[event])
+            elif event in ('default_downloader', 'thunder_downloader',
+                           'fdm_downloader'):
+                self.update_current_downloader(values)
                 continue
             elif event == 'only_copy':
                 self.downloader.only_copy = values[event]
                 continue
         self.shutdown()
 
-    def update_use_thunder(self, use_thunder):
-        if not self.downloader.thunder:
-            thunder_path = self.downloader.get_thunder()
-            if not thunder_path:
-                thunder_path = sg.PopupGetFile(
-                    "Could not find the thunder.exe",
-                    button_color=GLOBAL_BUTTON_COLOR)
-            if thunder_path and Path(thunder_path).is_file():
-                self.downloader.thunder = thunder_path
-        self.downloader.use_thunder = use_thunder
-        if use_thunder and not self.downloader.thunder:
-            # uncheck for no thunder exe
-            self.window['use_thunder'].Update(False)
+    def update_current_downloader(self, values):
+        for name in ('default_downloader', 'thunder_downloader',
+                     'fdm_downloader'):
+            if values[name]:
+                self.downloader.current_downloader = self.downloader.get_downloader(
+                    name)
 
     def shutdown(self):
         if self._shutdown:
@@ -489,19 +477,50 @@ class GUI(object):
                     font=('Mono', 15),
                     tooltip=' Sub folder to save files, url netloc to default.',
                 ),
-                sg.Checkbox(
+                sg.Text(
+                    'Downloader:',
+                    background_color=WINDOW_BG,
+                    text_color='black',
+                    font=('Mono', 12),
+                ),
+                sg.Radio(
+                    'Default',
+                    change_submits=1,
+                    default=1,
+                    background_color=WINDOW_BG,
+                    tooltip='Run the downloader at first to enable it',
+                    text_color='black',
+                    key='default_downloader',
+                    group_id='choose_downloader',
+                    disabled=0,
+                    font=('Mono', 15),
+                ),
+                sg.Radio(
                     'Thunder',
                     change_submits=1,
-                    default=self.downloader.use_thunder,
+                    default=0,
                     background_color=WINDOW_BG,
-                    tooltip=
-                    'Use Thunder.exe to download, file title will be set to your clipboard, and be reset to null after 5 secs (set proxy by yourself)',
+                    tooltip='Run the downloader at first to enable it',
                     text_color='black',
-                    key='use_thunder',
+                    key='thunder_downloader',
+                    group_id='choose_downloader',
+                    disabled=not self.downloader.thunder_downloader,
+                    font=('Mono', 15),
+                ),
+                sg.Radio(
+                    'FDM',
+                    change_submits=1,
+                    default=0,
+                    background_color=WINDOW_BG,
+                    tooltip='Run the downloader at first to enable it',
+                    text_color='black',
+                    key='fdm_downloader',
+                    group_id='choose_downloader',
+                    disabled=not self.downloader.fdm_downloader,
                     font=('Mono', 15),
                 ),
                 sg.Checkbox(
-                    'OnlyCopy',
+                    'SkipDownload',
                     change_submits=1,
                     default=self.downloader.only_copy,
                     background_color=WINDOW_BG,
@@ -511,6 +530,8 @@ class GUI(object):
                     key='only_copy',
                     font=('Mono', 15),
                 ),
+            ],
+            [
                 sg.Text(
                     '',
                     font=('Mono', 12),
@@ -803,9 +824,10 @@ def find_one(pattern, string, index=1, **kwargs):
 class Downloader(object):
 
     def __init__(self):
-        self.thunder = self.get_thunder()
-        self.use_thunder = bool(self.thunder)
-        self.only_copy = True
+        self.thunder_downloader = self.get_thunder_downloader()
+        self.fdm_downloader = self.get_fdm_downloader()
+        self.current_downloader = self.get_downloader()
+        self.only_copy = False
         self.session = self.get_session()
         self.tasks = []
         self.parse_rules = {
@@ -824,6 +846,26 @@ class Downloader(object):
             '8fae9b7dc1431376': self.xvp,
         }
         self.q = Queue()
+
+    def get_downloader(self, name=None):
+        return {
+            'default_downloader': self._default_downloader_add_task,
+            'thunder_downloader': self._thunder_downloader_add_task,
+            'fdm_downloader': self._fdm_downloader_add_task,
+        }.get(name, self._default_downloader_add_task)
+
+    def _default_downloader_add_task(self, url):
+        return self.add_queue(url, self.get_saving_path(url))
+
+    def _thunder_downloader_add_task(self, url):
+        meta = self.get_meta(url)
+        pyperclip.copy(meta.file_name)
+        clear_clipboard()
+        self.add_thunder_task(meta.url, meta.file_name)
+
+    def _fdm_downloader_add_task(self, url):
+        meta = self.get_meta(url)
+        self.add_fdm_task(meta.url, meta.file_name)
 
     @staticmethod
     def ensure_parser_function(function):
@@ -882,7 +924,7 @@ class Downloader(object):
             ('AA' + url + 'ZZ').encode("utf-8"))).decode("utf-8")
 
     @staticmethod
-    def get_thunder():
+    def get_thunder_downloader():
         for proc in psutil.process_iter():
             try:
                 pname = proc.name()
@@ -890,15 +932,28 @@ class Downloader(object):
                     return proc.cmdline()[0]
             except Exception:
                 pass
-        # else:
-        #     raise FileNotFoundError
+
+    @staticmethod
+    def get_fdm_downloader():
+        for proc in psutil.process_iter():
+            try:
+                pname = proc.name()
+                if pname == 'fdm.exe':
+                    return proc.cmdline()[0]
+            except Exception:
+                pass
 
     def add_thunder_task(self, url, file_name):
         thunder_url = self.get_thunder_url(url)
-        if self.thunder and thunder_url:
+        if self.thunder_downloader and thunder_url:
             subprocess.Popen([
-                self.thunder, '-StartType:DesktopIcon', thunder_url, file_name
+                self.thunder_downloader, '-StartType:DesktopIcon', thunder_url,
+                file_name
             ]).wait()
+
+    def add_fdm_task(self, url, file_name):
+        if self.fdm_downloader and url:
+            subprocess.Popen([self.fdm_downloader, url]).wait()
 
     def choose_parser(self, url):
         host_md5 = self.get_host_md5(url)
