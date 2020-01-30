@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# pip install pyperclip requests[socks] PySimpleGUI
+# pip install pyperclip requests[socks] PySimpleGUI psutil
 
 import base64
 import hashlib
