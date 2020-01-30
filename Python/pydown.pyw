@@ -967,6 +967,8 @@ class Downloader(object):
             return
         try:
             result = parser(url)
+            if not result:
+                return
             GUI.msg = f'[Got meta]: {result.title}'
             GUI.sound.start()
             return result
