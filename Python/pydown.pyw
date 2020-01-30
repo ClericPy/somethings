@@ -389,15 +389,6 @@ class GUI(object):
         self.window[key].Update(value)
         self.refresh()
 
-    def get_saving_path(self, url):
-        sub_dir = self.window['sub_dir'].Get()
-        if not sub_dir:
-            sub_dir = VideoMeta.clean_unsafe_file_name(
-                urlparse(url).netloc) or ''
-        path = SAVING_DIR / sub_dir
-        # print(path)
-        return path
-
     def init_window(self):
         half_screen_size = get_screensize(zoom=0.5)
         button_font = ('Mono', 18)
@@ -463,19 +454,6 @@ class GUI(object):
                     size=(15, 1),
                     change_submits=1,
                     tooltip=' Update proxy for new task ',
-                ),
-                sg.Text(
-                    'Sub Folder:',
-                    background_color=WINDOW_BG,
-                    text_color='black',
-                    font=('Mono', 12),
-                ),
-                sg.Input(
-                    '',
-                    key='sub_dir',
-                    size=(10, 1),
-                    font=('Mono', 15),
-                    tooltip=' Sub folder to save files, url netloc to default.',
                 ),
                 sg.Text(
                     'Downloader:',
@@ -855,7 +833,7 @@ class Downloader(object):
         }.get(name, self._default_downloader_add_task)
 
     def _default_downloader_add_task(self, url):
-        return self.add_queue(url, self.get_saving_path(url))
+        return self.add_queue(url)
 
     def _thunder_downloader_add_task(self, url):
         meta = self.get_meta(url)
