@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         新浪图床防盗链
 // @namespace    https://github.com/ClericPy/somethings
-// @version      0.6
+// @version      0.7
 // @description  try to take over the world!
 // @author       Clericpy
 // @match        https://bh.sb/post/*
@@ -15,11 +15,19 @@
     'use strict';
 
     function trans_img() {
-        var scode = document.documentElement.outerHTML
-        if (/:\/\/ww\d+\.sinaimg\.cn\//g.test(scode)) {
-            scode = scode.replace(/:\/\/ww\d+\.sinaimg\.cn\//g, '://tva1.sinaimg.cn/')
-            document.write(scode)
-        }
+        // var scode = document.documentElement.outerHTML
+        // if (/:\/\/ww\d+\.sinaimg\.cn\//g.test(scode)) {
+        //     scode = scode.replace(/:\/\/(ww|ws)\d+\.sinaimg\.cn\//g, '://tva1.sinaimg.cn/')
+        //     document.write(scode)
+        // }
+        var items = document.querySelectorAll('[href*=".sinaimg.cn"]')
+        items.forEach(i => {
+            i.setAttribute('href', i.href.replace(/:\/\/(ww|ws)\d+\.sinaimg\.cn\//g, '://tva1.sinaimg.cn/'))
+        });
+        var items = document.querySelectorAll('[src*=".sinaimg.cn"]')
+        items.forEach(i => {
+            i.setAttribute('src', i.src.replace(/:\/\/(ww|ws)\d+\.sinaimg\.cn\//g, '://tva1.sinaimg.cn/'))
+        });
     }
     trans_img()
 })();
