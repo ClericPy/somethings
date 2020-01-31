@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         新浪图床防盗链
 // @namespace    https://github.com/ClericPy/somethings
-// @version      0.7
+// @version      0.8
 // @description  try to take over the world!
 // @author       Clericpy
 // @match        https://bh.sb/post/*
@@ -29,5 +29,7 @@
             i.setAttribute('src', i.src.replace(/:\/\/(ww|ws)\d+\.sinaimg\.cn\//g, '://tva1.sinaimg.cn/'))
         });
     }
-    trans_img()
+    document.addEventListener("DOMContentLoaded", function(event) {
+        trans_img()
+    });
 })();
