@@ -268,8 +268,7 @@ class GUI(object):
 4. Press `Downloads` button, to open the folder, only for windows explorer.exe
 5. Select `Listen Clipboard`, will auto create task from Clipboard change
 6. Uncheck the `127.0.0.1:1080`, will disable the proxy
-7. `Sub Folder` for saving files, instead of url netloc as dir name
-8. Double Click tasks of the table, will open url in the webbrowser if task not ok, will open file if task is ok''',
+7. Double Click tasks of the table, will open url in the webbrowser if task not ok, will open file if task is ok''',
                     font=('Mono', 18))
                 continue
             elif event == 'pause':
@@ -306,7 +305,7 @@ class GUI(object):
                 REQUEST_PROXY.clear()
                 continue
             elif event in ('default_downloader', 'thunder_downloader',
-                           'fdm_downloader'):
+                           'fdm_downloader', 'idm_downloader'):
                 self.update_current_downloader(values)
                 continue
             elif event == 'only_copy':
@@ -316,7 +315,7 @@ class GUI(object):
 
     def update_current_downloader(self, values):
         for name in ('default_downloader', 'thunder_downloader',
-                     'fdm_downloader'):
+                     'fdm_downloader', 'idm_downloader'):
             if values[name]:
                 self.downloader.current_downloader = self.downloader.get_downloader(
                     name)
@@ -495,6 +494,18 @@ class GUI(object):
                     key='fdm_downloader',
                     group_id='choose_downloader',
                     disabled=not self.downloader.fdm_downloader,
+                    font=('Mono', 15),
+                ),
+                sg.Radio(
+                    'IDM',
+                    change_submits=1,
+                    default=bool(self.downloader.idm_downloader),
+                    background_color=WINDOW_BG,
+                    tooltip='Run the downloader at first to enable it',
+                    text_color='black',
+                    key='idm_downloader',
+                    group_id='choose_downloader',
+                    disabled=not self.downloader.idm_downloader,
                     font=('Mono', 15),
                 ),
                 sg.Checkbox(
@@ -767,7 +778,12 @@ class VideoMeta(object):
     @classmethod
     def get_safe_file_name(cls, title, url):
         safe_title = str(cls.clean_unsafe_file_name(title) or '')
-        return safe_title or cls.get_url_name(url) or f'{cls.get_time_title()}'
+        url_name = cls.get_url_name(url)
+        if '.' in url_name:
+            ext = f'.{url_name.split(".")[-1]}'
+        else:
+            ext = ''
+        return f'{safe_title}{ext}' or url_name or f'{cls.get_time_title()}{ext}'
 
     @staticmethod
     def get_time_title():
@@ -804,7 +820,15 @@ class Downloader(object):
     def __init__(self):
         self.thunder_downloader = self.get_thunder_downloader()
         self.fdm_downloader = self.get_fdm_downloader()
-        self.current_downloader = self.get_downloader()
+        self.idm_downloader = self.get_idm_downloader()
+        if self.idm_downloader:
+            self.current_downloader = self.get_downloader('idm_downloader')
+        elif self.fdm_downloader:
+            self.current_downloader = self.get_downloader('fdm_downloader')
+        elif self.thunder_downloader:
+            self.current_downloader = self.get_downloader('thunder_downloader')
+        else:
+            self.current_downloader = self.get_downloader()
         self.only_copy = False
         self.session = self.get_session()
         self.tasks = []
@@ -830,6 +854,7 @@ class Downloader(object):
             'default_downloader': self._default_downloader_add_task,
             'thunder_downloader': self._thunder_downloader_add_task,
             'fdm_downloader': self._fdm_downloader_add_task,
+            'idm_downloader': self._idm_downloader_add_task,
         }.get(name, self._default_downloader_add_task)
 
     def _default_downloader_add_task(self, url):
@@ -844,6 +869,10 @@ class Downloader(object):
     def _fdm_downloader_add_task(self, url):
         meta = self.get_meta(url)
         self.add_fdm_task(meta.url, meta.file_name)
+
+    def _idm_downloader_add_task(self, url):
+        meta = self.get_meta(url)
+        self.add_idm_task(meta.url, meta.file_name)
 
     @staticmethod
     def ensure_parser_function(function):
@@ -921,6 +950,16 @@ class Downloader(object):
             except Exception:
                 pass
 
+    @staticmethod
+    def get_idm_downloader():
+        for proc in psutil.process_iter():
+            try:
+                pname = proc.name()
+                if pname == 'IDMan.exe':
+                    return proc.cmdline()[0]
+            except Exception:
+                pass
+
     def add_thunder_task(self, url, file_name):
         thunder_url = self.get_thunder_url(url)
         if self.thunder_downloader and thunder_url:
@@ -932,6 +971,13 @@ class Downloader(object):
     def add_fdm_task(self, url, file_name):
         if self.fdm_downloader and url:
             subprocess.Popen([self.fdm_downloader, url]).wait()
+
+    def add_idm_task(self, url, file_name):
+        if self.idm_downloader and url:
+            subprocess.Popen([
+                self.idm_downloader, '/d', url, '/n', '/f', file_name, '/p',
+                str(SAVING_DIR)
+            ]).wait()
 
     def choose_parser(self, url):
         host_md5 = self.get_host_md5(url)
@@ -1042,8 +1088,13 @@ class Downloader(object):
 
 
 def main():
-    gui = GUI()
-    gui.x
+    try:
+        gui = GUI()
+        gui.x
+    except KeyboardInterrupt:
+        return
+    except Exception:
+        traceback.print_exc()
 
 
 def test_new_parser():
