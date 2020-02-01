@@ -1094,7 +1094,8 @@ def main():
     except KeyboardInterrupt:
         return
     except Exception:
-        traceback.print_exc()
+        err = traceback.format_exc()
+        sg.PopupOK(err)
 
 
 def test_new_parser():
