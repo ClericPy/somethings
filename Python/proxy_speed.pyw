@@ -176,7 +176,7 @@ def main():
             window['output'].Update('')
         elif event == 'test_nodes':
             result = test_nodes()
-            sg.PopupOK(result, font=('mono', 18))
+            sg.PopupOK(result, title='', font=('mono', 18))
         elif event == 'pause':
             PAUSE = not PAUSE
             if PAUSE:
