@@ -1,10 +1,17 @@
 # -*- coding: utf-8 -*-
 # pip install torequests pysocks PySimpleGUI
 
+import base64
 import ctypes
+import json
+import socket
 import time
+import timeit
+from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 from threading import Thread
 
+import psutil
 import PySimpleGUI as sg
 from torequests import tPool
 from torequests.utils import UA, ttime
@@ -15,7 +22,8 @@ INTERVAL = 2
 TRIALS = 3
 TIMEOUT = 1
 STATUS_COLOR = ''
-VERSION = '0.0.1'
+VERSION = '0.0.2'
+PAUSE = False
 
 
 def get_screensize():
@@ -41,6 +49,9 @@ def update_color(window, avg_cost):
 
 def async_print(window):
     while 1:
+        if PAUSE:
+            time.sleep(2)
+            continue
         err = ''
         req = tPool()
         tasks = [
@@ -79,12 +90,32 @@ def cd(secs):
 
 
 def main():
-    global PROXY, TESTURL, INTERVAL, TRIALS, TIMEOUT
+    global PROXY, TESTURL, INTERVAL, TRIALS, TIMEOUT, PAUSE
     layouts = [[
-        sg.Text('Proxy   :', font=('mono', 16)),
-        sg.Input(
-            PROXY, key='current_proxy', change_submits=True, font=('mono', 16)),
+        sg.Button(
+            'Find Nodes',
+            key='test_nodes',
+            button_color=('black', 'white'),
+            font=('mono', 16)),
+        sg.Button(
+            'Clear Output',
+            key='clear_op',
+            button_color=('black', 'white'),
+            font=('mono', 16)),
+        sg.Button(
+            'Pause',
+            key='pause',
+            button_color=('white', 'green'),
+            font=('mono', 16)),
     ],
+               [
+                   sg.Text('Proxy   :', font=('mono', 16)),
+                   sg.Input(
+                       PROXY,
+                       key='current_proxy',
+                       change_submits=True,
+                       font=('mono', 16)),
+               ],
                [
                    sg.Text('Target  :', font=('mono', 16)),
                    sg.Input(
@@ -141,6 +172,58 @@ def main():
             TRIALS = abs(int(values[event] or 0)) or 1
         elif event == 'timeout':
             TIMEOUT = abs(int(values[event] or 0)) or 1
+        elif event == 'clear_op':
+            window['output'].Update('')
+        elif event == 'test_nodes':
+            test_nodes()
+        elif event == 'pause':
+            PAUSE = not PAUSE
+            if PAUSE:
+                button_color = ('white', 'red')
+                text = 'Continue'
+            else:
+                button_color = ('white', 'green')
+                text = 'Pause'
+            window['pause'].Update(text, button_color)
+
+
+def get_config():
+    process_name = base64.b85decode(b'b7)~?Z+CNVV{3DA').decode()
+    for i in psutil.process_iter():
+        try:
+            if i.name().lower().startswith(process_name):
+                path = i.cmdline()[0]
+                if 'temp' not in path:
+                    path = Path(path).parent / base64.b32decode(b'M52WSLLDN5XGM2LHFZVHG33O').decode()
+                    return json.loads(path.read_text('u8'))
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess,
+                IndexError):
+            continue
+
+
+def check(config):
+    config['cost'] = 0
+    try:
+        start = timeit.default_timer()
+        socket.create_connection((config['server'], config['server_port']),
+                                 timeout=2)
+        config['cost'] = int((timeit.default_timer() - start) * 1000)
+    except socket.timeout:
+        pass
+    finally:
+        return config
+
+
+def test_nodes():
+    configs = get_config()
+    pool = ThreadPoolExecutor(100)
+    results = [
+        i for i in pool.map(check, [c for c in configs['configs']])
+        if 0 < i['cost'] < TIMEOUT * 1000
+    ]
+    results.sort(key=lambda i: i['cost'])
+    for i in results:
+        print(f'{i["cost"]: >4}\t{i["remarks"]}')
 
 
 if __name__ == "__main__":
