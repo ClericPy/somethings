@@ -93,7 +93,7 @@ def main():
     global PROXY, TESTURL, INTERVAL, TRIALS, TIMEOUT, PAUSE
     layouts = [[
         sg.Button(
-            'Find Nodes',
+            'Check Nodes',
             key='test_nodes',
             button_color=('black', 'white'),
             font=('mono', 16)),
@@ -175,7 +175,8 @@ def main():
         elif event == 'clear_op':
             window['output'].Update('')
         elif event == 'test_nodes':
-            test_nodes()
+            result = test_nodes()
+            sg.PopupOK(result, font=('mono', 18))
         elif event == 'pause':
             PAUSE = not PAUSE
             if PAUSE:
@@ -194,7 +195,8 @@ def get_config():
             if i.name().lower().startswith(process_name):
                 path = i.cmdline()[0]
                 if 'temp' not in path:
-                    path = Path(path).parent / base64.b32decode(b'M52WSLLDN5XGM2LHFZVHG33O').decode()
+                    path = Path(path).parent / base64.b32decode(
+                        b'M52WSLLDN5XGM2LHFZVHG33O').decode()
                     return json.loads(path.read_text('u8'))
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess,
                 IndexError):
@@ -222,8 +224,7 @@ def test_nodes():
         if 0 < i['cost'] < TIMEOUT * 1000
     ]
     results.sort(key=lambda i: i['cost'])
-    for i in results:
-        print(f'{i["cost"]: >4}\t{i["remarks"]}')
+    return '\n'.join([f'{i["cost"]: >4}\t{i["remarks"]}' for i in results])
 
 
 if __name__ == "__main__":
