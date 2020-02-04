@@ -22,7 +22,7 @@ INTERVAL = 2
 TRIALS = 3
 TIMEOUT = 1
 STATUS_COLOR = ''
-VERSION = '0.0.2'
+VERSION = '0.0.3'
 PAUSE = False
 
 
@@ -176,7 +176,7 @@ def main():
             window['output'].Update('')
         elif event == 'test_nodes':
             result = test_nodes()
-            sg.PopupOK(result, title='', font=('mono', 18))
+            sg.PopupOK(result, title='', font=('mono', 14))
         elif event == 'pause':
             PAUSE = not PAUSE
             if PAUSE:
