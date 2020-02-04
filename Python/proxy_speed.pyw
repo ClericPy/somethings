@@ -205,15 +205,20 @@ def get_config():
 
 def check(config):
     config['cost'] = 0
-    try:
-        start = timeit.default_timer()
-        socket.create_connection((config['server'], config['server_port']),
-                                 timeout=2)
-        config['cost'] = int((timeit.default_timer() - start) * 1000)
-    except socket.timeout:
-        pass
-    finally:
-        return config
+    costs = []
+    for _ in range(TRIALS):
+        cost = 9999
+        try:
+            start = timeit.default_timer()
+            socket.create_connection((config['server'], config['server_port']),
+                                     timeout=2)
+            cost = int((timeit.default_timer() - start) * 1000)
+        except socket.timeout:
+            pass
+        finally:
+            costs.append(cost)
+    config['cost'] = sum(costs) // len(costs)
+    return config
 
 
 def test_nodes():
