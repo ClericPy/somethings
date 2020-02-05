@@ -541,7 +541,7 @@ class GUI(object):
                         'Title', 'Status', 'Duration', 'Size', 'Speed',
                         'Timeleft', 'Progress'
                     ],
-                    header_font=('Mono', 18),
+                    header_font=('Mono', 16),
                     auto_size_columns=0,
                     justification='center',
                     display_row_numbers=True,
@@ -551,13 +551,13 @@ class GUI(object):
                     tooltip='Double click to open file or pause task'
                     '; Ctrl-A to select all rows; Press `DEL` to delete',
                     col_widths=[
-                        int(40 / 100 * width * 0.1),
+                        int(20 / 100 * width * 0.1),
+                        int(8 / 100 * width * 0.1),
                         int(10 / 100 * width * 0.1),
-                        int(13 / 100 * width * 0.1),
                         int(10 / 100 * width * 0.1),
                         int(10 / 100 * width * 0.1),
+                        int(9 / 100 * width * 0.1),
                         int(12 / 100 * width * 0.1),
-                        int(15 / 100 * width * 0.1),
                     ])
             ],
         ]
@@ -862,17 +862,29 @@ class Downloader(object):
 
     def _thunder_downloader_add_task(self, url):
         meta = self.get_meta(url)
+        if not meta:
+            GUI.msg = f'No meta: {url}'
+            return
         pyperclip.copy(meta.file_name)
         clear_clipboard()
         self.add_thunder_task(meta.url, meta.file_name)
 
     def _fdm_downloader_add_task(self, url):
         meta = self.get_meta(url)
+        if not meta:
+            GUI.msg = f'No meta: {url}'
+            return
         self.add_fdm_task(meta.url, meta.file_name)
 
     def _idm_downloader_add_task(self, url):
         meta = self.get_meta(url)
-        self.add_idm_task(meta.url, meta.file_name)
+        if not meta:
+            GUI.msg = f'No meta: {url}'
+            return
+        sp = SAVING_DIR / urlparse(url).netloc
+        if not sp.is_dir():
+            sp.mkdir()
+        self.add_idm_task(meta.url, meta.file_name, str(sp))
 
     @staticmethod
     def ensure_parser_function(function):
@@ -916,7 +928,7 @@ class Downloader(object):
         try:
             return requests.head(
                 'http://www.python.org/',
-                timeout=(1.5, 1),
+                timeout=(2, 1),
                 proxies={
                     'http': f'http://{PROXY}',
                     'https': f'http://{PROXY}',
@@ -972,11 +984,11 @@ class Downloader(object):
         if self.fdm_downloader and url:
             subprocess.Popen([self.fdm_downloader, url]).wait()
 
-    def add_idm_task(self, url, file_name):
+    def add_idm_task(self, url, file_name, saving_path):
         if self.idm_downloader and url:
             subprocess.Popen([
                 self.idm_downloader, '/d', url, '/n', '/f', file_name, '/p',
-                str(SAVING_DIR)
+                saving_path
             ]).wait()
 
     def choose_parser(self, url):
@@ -1005,7 +1017,7 @@ class Downloader(object):
     def xvp(self, origin):
         for _ in range(1, 3):
             try:
-                r = self.session.get(origin, timeout=(1.5, 5))
+                r = self.session.get(origin, timeout=(2, 5))
                 scode = r.text
                 if 'html5player.setVideoUrlHigh' in scode:
                     break
@@ -1026,7 +1038,7 @@ class Downloader(object):
     def php(self, origin):
         for _ in range(1, 3):
             try:
-                r = self.session.get(origin, timeout=(1.5, 5))
+                r = self.session.get(origin, timeout=(2, 5))
                 scode = r.text
                 if 'qualityItems_' in scode:
                     break
