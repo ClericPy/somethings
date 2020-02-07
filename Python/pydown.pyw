@@ -552,11 +552,11 @@ class GUI(object):
                     '; Ctrl-A to select all rows; Press `DEL` to delete',
                     col_widths=[
                         int(20 / 100 * width * 0.1),
-                        int(8 / 100 * width * 0.1),
                         int(10 / 100 * width * 0.1),
                         int(10 / 100 * width * 0.1),
                         int(10 / 100 * width * 0.1),
-                        int(9 / 100 * width * 0.1),
+                        int(10 / 100 * width * 0.1),
+                        int(11 / 100 * width * 0.1),
                         int(12 / 100 * width * 0.1),
                     ])
             ],

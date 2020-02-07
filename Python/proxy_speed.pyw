@@ -215,6 +215,8 @@ def check(config):
             cost = int((timeit.default_timer() - start) * 1000)
         except socket.timeout:
             pass
+        except socket.gaierror:
+            pass
         finally:
             costs.append(cost)
     config['cost'] = sum(costs) // len(costs)
