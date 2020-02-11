@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         新浪图床防盗链
 // @namespace    https://github.com/ClericPy/somethings
-// @version      0.10
+// @version      0.11
 // @description  try to take over the world!
 // @author       Clericpy
 // @match        https://bh.sb/post/*
