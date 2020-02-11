@@ -6,6 +6,7 @@
 // @author       Clericpy
 // @match        https://bh.sb/post/*
 // @match        https://fast.v2ex.com/t/*
+// @match        https://qingniantuzhai.com/qing-nian-tu-zhai*
 // @grant        none
 // @updateURL    https://raw.githubusercontent.com/ClericPy/somethings/master/Javascript/tampermonkey/trans_sina_img.js
 // @downloadURL  https://raw.githubusercontent.com/ClericPy/somethings/master/Javascript/tampermonkey/trans_sina_img.js
@@ -18,10 +19,9 @@
         var items = document.querySelectorAll('a, img')
         items.forEach(i => {
             let scode = i.outerHTML
-            if (/:\/\/(ww|ws)\d+\.sinaimg\.cn\//g.test(scode)) {
-
+            if (/:\/\/(ww|ws|wx)\d+\.sinaimg\.cn\//g.test(scode)) {
+                i.outerHTML = scode.replace(/:\/\/(ww|ws|wx)\d+\.sinaimg\.cn\//g, '://tva1.sinaimg.cn/')
             }
-            i.outerHTML = scode.replace(/:\/\/(ww|ws)\d+\.sinaimg\.cn\//g, '://tva1.sinaimg.cn/')
         });
     }
     trans_img()
