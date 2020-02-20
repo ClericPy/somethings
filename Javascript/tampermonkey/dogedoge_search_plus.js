@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         dogedoge 搜索增强工具
 // @namespace    https://github.com/ClericPy/somethings
-// @version      0.6
+// @version      0.7
 // @description  try to take over the world!
 // @author       Clericpy
 // @match        https://www.dogedoge.com/results*
@@ -108,5 +108,10 @@
         translate(cn_words, cn2en)
         return
     }
+    document.querySelectorAll('li.zcm__item>a').forEach(i => {
+        if (i && i.getAttribute('href').slice(0, 4) == 'java') {
+            i.remove()
+        }
+    });
 
 })();
