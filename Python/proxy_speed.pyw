@@ -175,8 +175,7 @@ def main():
         elif event == 'clear_op':
             window['output'].Update('')
         elif event == 'test_nodes':
-            result = test_nodes()
-            sg.PopupOK(result, title='', font=('mono', 14))
+            Thread(target=test_nodes).start()
         elif event == 'pause':
             PAUSE = not PAUSE
             if PAUSE:
@@ -186,6 +185,7 @@ def main():
                 button_color = ('white', 'green')
                 text = 'Pause'
             window['pause'].Update(text, button_color)
+    quit()
 
 
 def get_config():
@@ -231,7 +231,8 @@ def test_nodes():
         if 0 < i['cost'] < TIMEOUT * 1000
     ]
     results.sort(key=lambda i: i['cost'])
-    return '\n'.join([f'{i["cost"]: >4}\t{i["remarks"]}' for i in results])
+    result = '\n'.join([f'{i["cost"]: >4}\t{i["remarks"]}' for i in results])
+    sg.PopupOK(result, title='', font=('mono', 14))
 
 
 if __name__ == "__main__":
