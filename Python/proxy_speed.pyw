@@ -232,7 +232,10 @@ def test_nodes():
     ]
     results.sort(key=lambda i: i['cost'])
     result = '\n'.join([f'{i["cost"]: >4}\t{i["remarks"]}' for i in results])
-    sg.PopupOK(result, title='', font=('mono', 14))
+    try:
+        sg.PopupOK(result, title='', font=('mono', 14))
+    except RuntimeError:
+        pass
 
 
 if __name__ == "__main__":
