@@ -10,29 +10,45 @@ Store some scripts or snippets written by myself. Some GUI apps will build windo
    1. pydown (GUI, exe, pyw)
 
       > Simple downloader GUI for parsing special Websites.
-      >
-      > > pip install pyperclip requests[socks] PySimpleGUI
+      
+      > pip install pyperclip requests[socks] PySimpleGUI
 
    2. proxy_speed (GUI, exe, pyw)
 
       > Check proxy speed for some cases.
-      >
-      > > pip install torequests pysocks PySimpleGUI
+      
+      > pip install torequests pysocks PySimpleGUI
 
    3. PyinstallerUI  (TUI, py, python -m)
 
       > Terminal UI for PyInstaller.
+      
+      > Steps:
       >
       > 1. pip install pyinstallerui -U
       >2. python -m pyinstallerui
       
    4. Bookmarks checker
 
+      > Steps:
+      >
       > 1. export bookmark.html
       > 2. python bookmark_checker.py
       > 3. drag bookmark.html to terminal for the path
       > 4. wait for checking finished
       > 5. open the bookmark.html in the browser
+      
+   5. HTML image viewer
+
+      > Find all the images in nested folders, generate the html file show them all.
+      >
+      > >  pip install pyperclip
+
+      > Features:
+      >
+      > 1. Recursively find pics in nested folders
+      > 2. Fix the file name sorting issue like: 10.jpg < 2.jpg
+      > 3. Auto fetch path from clipboard
 
 2. **Javascript**
    1. tampermonkey (Chrome -> Tampermonkey -> Utilities -> Install from URL)
