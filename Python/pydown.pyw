@@ -15,13 +15,14 @@ from os import startfile
 from pathlib import Path
 from queue import Queue
 from threading import Event, Thread, Timer
-from urllib.parse import urlparse
+from urllib.parse import parse_qsl, urlparse
 
 import psutil
 import pyperclip
 import PySimpleGUI as sg
 import requests
 import urllib3
+
 '''
 TODO:
 1. retry
@@ -1062,6 +1063,8 @@ class Downloader(object):
             ]
             if items:
                 url = items[0]['videoUrl']
+                if '?' in origin:
+                    title = f'{title} - {parse_qsl(origin)[0][1]}'
                 return VideoMeta(url, origin, title, duration)
 
     def add_queue(self, url, saving_path=SAVING_DIR):
