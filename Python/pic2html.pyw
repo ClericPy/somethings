@@ -15,7 +15,7 @@ top = Tk()
 top.withdraw()
 top.update()
 TIMEOUT = 5
-IMAGE_WIDTH = '65%'
+IMAGE_WIDTH = '80%'
 valid_exts = {
     '.pcd', '.gif', '.jfif', '.raw', '.pcx', '.svg', '.pjpeg', '.pjp', '.eps',
     '.fpx', '.tga', '.cur', '.WMF', '.psd', '.tiff', '.png', '.ufo', '.tif',
@@ -27,6 +27,10 @@ JS = '''
 <script>
 let ww = document.body.clientWidth
 let wh = document.body.clientHeight
+document.addEventListener('dblclick', on_dblclick);
+function on_dblclick(e){
+    window.open(e.srcElement.src)
+}
 const images = document.querySelectorAll('.lazy-load');
 const config = {
     rootMargin: wh*3+'px 0px',
@@ -43,6 +47,11 @@ function onIntersection(entries) {
             preloadImage(entry.target);
         }
     });
+}
+function range_change(){
+    var value = document.getElementById('range').value ;
+    document.getElementById('width').innerHTML = ' width: ' + value + '%';
+    document.getElementById('new_width').innerHTML = '.pic{width:' + value + '%;}'
 }
 if (!('IntersectionObserver' in window)) {
     Array.from(images).forEach(image => preloadImage(image));
@@ -120,7 +129,7 @@ def run(dir_path: Path):
         h2.append(f'{prefix}:{src}')
     if not container:
         raise FileNotFoundError(f'No pics? {valid_exts}')
-    HTML = f'<html>{STYLE}<body><ol id="name-list">'
+    HTML = f'<html>{STYLE}<body><ol id="name-list"><input id="range" type="range" min="0" max="100" value="{IMAGE_WIDTH[:-1]}" step="1" oninput="range_change()"> <span id="width" style="color:white"> width: {IMAGE_WIDTH}</span>'
     for h2_str, srcs in container.items():
         srcs.sort()
         container[h2_str] = [src.split(':', 1)[1] for src in srcs]
@@ -129,11 +138,11 @@ def run(dir_path: Path):
     for h2_str, srcs in container.items():
         HTML += f'<div class="article"><hr><h2 title="Click scoll to the top" id="{md5(h2_str)}">{escape(h2_str)}</h2><hr>'
         HTML += '\n'.join([
-            f'''<div class="pic"><img class="lazy-load" data-src="{src}" alt="Loading" /><div class="path">{src}</div></div>'''
+            f'''<div class="pic"><img class="lazy-load" title="double click to view" data-src="{src}" alt="Loading" /><div class="path">{src}</div></div>'''
             for src in srcs
         ])
         HTML += '</div>'
-    HTML += f'</div></body>{JS}</html>'
+    HTML += f'</div></body><style id="new_width"></style>{JS}</html>'
     fp = f'{root_string}/-{dir_path.name}.html'
     with open(fp, 'w', encoding='u8') as f:
         f.write(HTML)
