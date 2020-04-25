@@ -18,7 +18,7 @@ from torequests.utils import UA, ttime
 
 TESTURL = 'https://s.ytimg.com/yts/img/favicon-vfl8qSV2F.ico'
 PROXY = 'http://127.0.0.1:1080'
-INTERVAL = 2
+INTERVAL = 1
 TRIALS = 3
 TIMEOUT = 1
 STATUS_COLOR = ''
