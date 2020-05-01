@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         什么值得买抓取评论
 // @namespace    https://github.com/ClericPy/somethings
-// @version      0.1
+// @version      0.2
 // @description  什么值得买
 // @author       Clericpy
 // @match        http*://search.smzdm.com/*
