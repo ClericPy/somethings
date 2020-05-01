@@ -15,22 +15,29 @@
 ;(function () {
   unsafeWindow.crawler_interval = 1000
   unsafeWindow.stop_crawler = false
-  function load_cmts(url, force, url_id) {
+  function append_items(title, items, url_id) {
+    document.getElementById('show_node').innerHTML += `<hr><h2><a href="${decodeURIComponent(url_id)}" target="_blank"><b>${title}</b></a></h2><hr>`
+    let show_node = document.getElementById('show_node')
+    items.reverse().forEach((item) => {
+      show_node.appendChild(item)
+    })
+  }
+  function load_cmts(url, force, url_id, title, items) {
     if (force) {
       //   document.querySelector('.feed-pagenation').scrollIntoView({ behavior: 'smooth' })
-      document.getElementById('show_node').innerHTML += '<hr>'
       unsafeWindow.stop_crawler = false
       let btn = document.getElementById(url_id)
       btn.innerText = '正在抓取'
       btn.disabled = true
     }
     if (unsafeWindow.stop_crawler) {
-      let msg = '停止抓取: ' + document.querySelectorAll('#show_node>li').length + ' ×'
+      let msg = '停止抓取: ' + items.length + ' ×'
       document.getElementById('crawl_msg').innerHTML = msg
       let btn = document.getElementById(url_id)
       btn.innerText = '抓取评论'
       btn.disabled = false
       alert('抓取已停止')
+      append_items(title, items, url_id)
       return
     }
     GM_xmlhttpRequest({
@@ -40,16 +47,15 @@
         var sub_doc = document.createElement('div')
         sub_doc.innerHTML = resp.responseText.trim()
         let cmts = sub_doc.querySelectorAll('#commentTabBlockNew>ul>li.comment_list')
-        let show_node = document.getElementById('show_node')
         cmts.forEach((item) => {
           let text = item.querySelector('.comment_conBox>.comment_conWrap .comment_con [itemprop="description"]').innerText || ''
           let time = item.querySelector('div.time').innerText
           // console.log([text, time]);
           let newline = document.createElement('li')
           newline.innerHTML = `<span class="time">${time}</span><span>${text}</span>`
-          show_node.appendChild(newline)
+          items.push(newline)
         })
-        let msg = '正在抓取: ' + document.querySelectorAll('#show_node>li').length
+        let msg = '正在抓取: ' + items.length
         document.getElementById('crawl_msg').innerHTML = msg
         let btn = document.getElementById(url_id)
         btn.innerText = msg
@@ -57,12 +63,13 @@
         let np = sub_doc.querySelector('li.pagedown a')
         if (np) {
           setTimeout(() => {
-            load_cmts(np.href, false, url_id)
+            load_cmts(np.href, false, url_id, title, items)
           }, unsafeWindow.crawler_interval)
         } else {
-          let msg = '抓取完毕: ' + document.querySelectorAll('#show_node>li').length + ' √'
+          let msg = '抓取完毕: ' + items.length + ' √'
           document.getElementById('crawl_msg').innerHTML = msg
           btn.innerText = '抓取完毕'
+          append_items(title, items, url_id)
         }
       },
     })
@@ -104,16 +111,18 @@
         color: #555;
         padding: 4px 12px;
       }`
-    document.querySelectorAll('#feed-main-list>li a.feed-btn-comment').forEach((item) => {
+    document.querySelectorAll('#feed-main-list>li').forEach((doc) => {
+      let title = doc.querySelector('.feed-block-title>a').innerText.trim()
+      let item = doc.querySelector('a.feed-btn-comment')
       if (item.title == '评论数 0') {
         return
       }
       let button = document.createElement('button')
-      button.setAttribute('onclick', "load_cmts('" + item.href + "', true, '" + encodeURIComponent(item.href) + "')")
+      button.id = encodeURIComponent(item.href)
+      button.setAttribute('onclick', `load_cmts('${item.href}', true, '${button.id}', '${title}', [])`)
       button.innerText = '抓取评论'
       button.className = 'custom_cmts'
       button.title = '停止按钮在下方评论列表'
-      button.id = encodeURIComponent(item.href)
       item.parentNode.appendChild(button)
 
       let button2 = document.createElement('button')
@@ -125,7 +134,7 @@
     let temp_node = document.querySelector('.search-feedback')
     let head = document.createElement('h2')
     head.id = 'show_node_head'
-    head.innerHTML = '<b>评论列表</b><br><span id="crawl_msg"></span>'
+    head.innerHTML = '<b style="font-size: 1.5em;">评论列表</b><br><span id="crawl_msg"></span>'
     temp_node.parentNode.insertBefore(head, temp_node)
 
     let stop_btn = document.createElement('button')
