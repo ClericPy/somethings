@@ -9,9 +9,8 @@ from tkinter.messagebox import askyesno, showerror
 from typing import Dict, List
 from hashlib import md5 as _md5
 
-from pyperclip import paste
-
 top = Tk()
+dir_path_str = top.clipboard_get()
 top.withdraw()
 top.update()
 TIMEOUT = 5
@@ -150,9 +149,8 @@ def run(dir_path: Path):
 
 
 def main():
-    dir_path = paste()
     try:
-        dir_path = Path(dir_path)
+        dir_path = Path(dir_path_str)
         if not dir_path.is_dir():
             raise FileNotFoundError(f'{dir_path} is not valid dir path.')
         run(dir_path)
