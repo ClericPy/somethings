@@ -75,7 +75,10 @@ def async_print(window):
         if ok == '[Fail]':
             for r in tasks:
                 if not r.x:
-                    err = r.error.__class__.__name__
+                    if hasattr(r, 'error'):
+                        err = r.error.__class__.__name__
+                    else:
+                        err = r
                     break
         cost = [int((r.task_cost_time or 9) * 1000) for r in tasks]
         avg_cost = int(sum(cost) / len(tasks))
