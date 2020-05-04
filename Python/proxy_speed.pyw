@@ -16,7 +16,11 @@ import PySimpleGUI as sg
 from torequests import tPool
 from torequests.utils import UA, ttime
 
-TESTURL = 'https://s.ytimg.com/yts/img/favicon-vfl8qSV2F.ico'
+
+# http://g.cn/generate_204
+# http://www.google.com/generate_204
+# http://www.qualcomm.cn/generate_204
+TESTURL = 'http://www.google.com/generate_204'
 PROXY = 'http://127.0.0.1:1080'
 INTERVAL = 1
 TRIALS = 3
@@ -59,7 +63,7 @@ def async_print(window):
                 TESTURL,
                 timeout=TIMEOUT,
                 headers={'User-Agent': UA.Chrome},
-                proxies={'https': PROXY}) for i in range(TRIALS)
+                proxies={'https': PROXY, 'http': PROXY}) for i in range(TRIALS)
         ]
         if all((i.x for i in tasks)):
             ok = '[ OK ]'
