@@ -42,8 +42,6 @@ Store some scripts or snippets written by myself. Some GUI apps will build windo
 
       > Find all the images in nested folders, generate the html file show them all.
       >
-      > >  pip install pyperclip
-
       > Features:
       >
       > 1. Recursively find pics in nested folders
