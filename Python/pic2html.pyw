@@ -126,7 +126,7 @@ def run(dir_path: Path):
         new_rp: Path = (rp / i.name).as_posix()
         src = str(new_rp).replace(root_string, '.')
         nums = re.findall(r'\d+', src)
-        prefix = ''.join([num.rjust(5, '0') for num in nums])
+        prefix = ''.join([num.rjust(10, '0') for num in nums])
         h2.append(f'{prefix}:{src}')
     if not container:
         raise FileNotFoundError(f'No pics? {valid_exts}')
