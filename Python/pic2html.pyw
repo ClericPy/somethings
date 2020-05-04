@@ -28,7 +28,9 @@ let ww = document.body.clientWidth
 let wh = document.body.clientHeight
 document.addEventListener('dblclick', on_dblclick);
 function on_dblclick(e){
-    window.open(e.srcElement.src)
+    if (e.srcElement.src){
+        window.open(e.srcElement.src)
+    }
 }
 const images = document.querySelectorAll('.lazy-load');
 const config = {
