@@ -142,10 +142,11 @@ def run(dir_path: Path):
         ])
         HTML += '</div>'
     HTML += f'</div></body><style id="new_width"></style>{JS}</html>'
-    fp = f'{root_string}/-{dir_path.name}.html'
+    # max path length issue
+    fp = dir_path / f'-{dir_path.name[:200-len(dir_path.as_posix())]}.html'
     with open(fp, 'w', encoding='u8') as f:
         f.write(HTML)
-    webbrowser.open(fp)
+    webbrowser.open(fp.as_posix())
 
 
 def main():
