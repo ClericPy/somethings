@@ -1,13 +1,13 @@
 import re
 import webbrowser
 from functools import lru_cache
+from hashlib import md5 as _md5
 from html import escape
 from pathlib import Path
 from time import time
 from tkinter import Tk
 from tkinter.messagebox import askyesno, showerror
 from typing import Dict, List
-from hashlib import md5 as _md5
 
 top = Tk()
 dir_path_str = top.clipboard_get()
