@@ -22,7 +22,6 @@ import pyperclip
 import PySimpleGUI as sg
 import requests
 import urllib3
-
 '''
 TODO:
 1. retry
@@ -48,7 +47,7 @@ REQUEST_HEADERS = {
     'Cache-Control': 'max-age=0',
     'Dnt': '1',
     'Upgrade-Insecure-Requests': '1',
-    'User-Agent': 'Mozilla/5.0 (Linux; Android 8.0; Pixel 2 Build/OPD3.170816.012) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Mobile Safari/537.36',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36',
     'Sec-Fetch-User': '?1',
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
     'Sec-Fetch-Site': 'same-origin',
@@ -179,8 +178,11 @@ class GUI(object):
             time.sleep(REFRESH_TABLE_INTERVAL)
 
     def refresh_status_bar(self):
-        num = len([i for i in DOWNLOADING_DIR.iterdir() if i.is_file()])
-        self.update('status_bar', f"Downloading: {num}. {self.msg}")
+        try:
+            num = len([i for i in DOWNLOADING_DIR.iterdir() if i.is_file()])
+            self.update('status_bar', f"Downloading: {num}. {self.msg}")
+        except Exception:
+            traceback.print_exc()
 
     def add_task(self, url=None):
         if not url:
@@ -228,7 +230,7 @@ class GUI(object):
             PROXY = ''
 
     def start_daemon_functions(self):
-        Thread(target=self.refresh_table_loop, daemon=True).start()
+        # Thread(target=self.refresh_table_loop, daemon=True).start()
         Thread(target=self.clipboard_listener_loop, daemon=True).start()
         Thread(target=self.downloader.run, daemon=True).start()
 
@@ -261,8 +263,7 @@ class GUI(object):
                 open_dir()
                 continue
             elif event in {'help', 'F1:112'}:
-                sg.Popup(
-                    '''
+                sg.Popup('''
 1. Press `New` button, will load url from Clipboard manually
 2. Press `Pause` button, to pause all downloading tasks
 3. Select some tasks from the table, Press `Delete` button (or press keyboard `Del`) to delete the files created by them
@@ -270,7 +271,7 @@ class GUI(object):
 5. Select `Listen Clipboard`, will auto create task from Clipboard change
 6. Uncheck the `127.0.0.1:1080`, will disable the proxy
 7. Double Click tasks of the table, will open url in the webbrowser if task not ok, will open file if task is ok''',
-                    font=('Mono', 18))
+                         font=('Mono', 18))
                 continue
             elif event == 'pause':
                 self.switch_pause_download()
@@ -381,6 +382,7 @@ class GUI(object):
             WATCH_CLIP.wait()
             new_url = (pyperclip.paste() or '').strip()
             if new_url and new_url != url:
+                print(new_url)
                 self.add_task(new_url)
                 url = new_url
             time.sleep(CLIPBOARD_LISTENER_INTERVAL)
@@ -395,48 +397,42 @@ class GUI(object):
         width = half_screen_size[0]
         self.layouts = [
             [
-                sg.Button(
-                    ' New ',
-                    key='new',
-                    font=button_font,
-                    tooltip=' Add Task from Clipboard URL ',
-                    pad=(10, 10),
-                    auto_size_button=1),
-                sg.Button(
-                    ' Pause ',
-                    key='pause',
-                    font=button_font,
-                    pad=(10, 10),
-                    auto_size_button=1),
-                sg.Button(
-                    ' Delete ',
-                    key='Delete',
-                    font=button_font,
-                    pad=(10, 10),
-                    auto_size_button=1),
-                sg.Button(
-                    ' Downloads ',
-                    key='view_downloads',
-                    font=button_font,
-                    tooltip=f' Open dir {SAVING_DIR} ',
-                    pad=(10, 10),
-                    auto_size_button=1),
-                sg.Exit(
-                    ' Exit ',
-                    font=button_font,
-                    pad=(10, 10),
-                    key='Exit',
-                    auto_size_button=1),
+                sg.Button(' New ',
+                          key='new',
+                          font=button_font,
+                          tooltip=' Add Task from Clipboard URL ',
+                          pad=(10, 10),
+                          auto_size_button=1),
+                sg.Button(' Pause ',
+                          key='pause',
+                          font=button_font,
+                          pad=(10, 10),
+                          auto_size_button=1),
+                sg.Button(' Delete ',
+                          key='Delete',
+                          font=button_font,
+                          pad=(10, 10),
+                          auto_size_button=1),
+                sg.Button(' Downloads ',
+                          key='view_downloads',
+                          font=button_font,
+                          tooltip=f' Open dir {SAVING_DIR} ',
+                          pad=(10, 10),
+                          auto_size_button=1),
+                sg.Exit(' Exit ',
+                        font=button_font,
+                        pad=(10, 10),
+                        key='Exit',
+                        auto_size_button=1),
                 sg.Button(' ? ', key='help', tooltip='`F1` for shortcut.'),
-                sg.Checkbox(
-                    'Listen Clipboard',
-                    change_submits=1,
-                    default=1,
-                    background_color=WINDOW_BG,
-                    text_color='black',
-                    tooltip=' Auto download url from Clipboard ',
-                    key='watch_clip',
-                    font=('Mono', 15)),
+                sg.Checkbox('Listen Clipboard',
+                            change_submits=1,
+                            default=1,
+                            background_color=WINDOW_BG,
+                            text_color='black',
+                            tooltip=' Auto download url from Clipboard ',
+                            key='watch_clip',
+                            font=('Mono', 15)),
             ],
             [
                 sg.Checkbox(
@@ -522,13 +518,12 @@ class GUI(object):
                 ),
             ],
             [
-                sg.Text(
-                    '',
-                    font=('Mono', 12),
-                    key='status_bar',
-                    text_color='black',
-                    background_color=WINDOW_BG,
-                    size=(999, 1)),
+                sg.Text('',
+                        font=('Mono', 12),
+                        key='status_bar',
+                        text_color='black',
+                        background_color=WINDOW_BG,
+                        size=(999, 1)),
             ],
             [
                 sg.Table(
@@ -562,16 +557,15 @@ class GUI(object):
                     ])
             ],
         ]
-        self.window = sg.Window(
-            f'Downloader ({SAVING_DIR}) v{VERSION}',
-            self.layouts,
-            size=half_screen_size,
-            return_keyboard_events=True,
-            finalize=1,
-            element_padding=(5, 0),
-            background_color=WINDOW_BG,
-            button_color=GLOBAL_BUTTON_COLOR,
-            resizable=1)
+        self.window = sg.Window(f'Downloader ({SAVING_DIR}) v{VERSION}',
+                                self.layouts,
+                                size=half_screen_size,
+                                return_keyboard_events=True,
+                                finalize=1,
+                                element_padding=(5, 0),
+                                background_color=WINDOW_BG,
+                                button_color=GLOBAL_BUTTON_COLOR,
+                                resizable=1)
         self.window['table'].Widget.bind('<Double-Button-1>', self.dbclick_cb)
         self.refresh()
 
@@ -671,8 +665,8 @@ class Task(object):
         self.wait_pause()
         try:
             self.f = open(self.downloading_file_path, 'wb')
-            for index, chunk in enumerate(
-                    r.iter_content(chunk_size=CHUNK_SIZE), 1):
+            for index, chunk in enumerate(r.iter_content(chunk_size=CHUNK_SIZE),
+                                          1):
                 # block for pause button
                 self.wait_pause()
                 if self.status == 'cancel':
@@ -831,7 +825,6 @@ class Downloader(object):
         else:
             self.current_downloader = self.get_downloader()
         self.only_copy = False
-        self.session = self.get_session()
         self.tasks = []
         self.parse_rules = {
             'b0bf4f6b72360600': self.php,
@@ -849,6 +842,10 @@ class Downloader(object):
             '8fae9b7dc1431376': self.xvp,
         }
         self.q = Queue()
+
+    @property
+    def session(self):
+        return self.get_session()
 
     def get_downloader(self, name=None):
         return {
@@ -926,17 +923,19 @@ class Downloader(object):
 
     @staticmethod
     def check_proxy():
-        try:
-            return requests.head(
-                'http://www.python.org/',
-                timeout=(2, 1),
-                proxies={
-                    'http': f'http://{PROXY}',
-                    'https': f'http://{PROXY}',
-                }).headers.get('Content-Length') == '0'
-        except requests.exceptions.RequestException:
-            GUI.msg = 'Check proxy fail.'
-            return False
+        for _ in range(5):
+            try:
+                headers = requests.head('http://bing.com/',
+                                        timeout=5,
+                                        proxies={
+                                            'http': f'http://{PROXY}',
+                                            'https': f'http://{PROXY}',
+                                        }).headers
+                # print(headers)
+                return headers.get('Date')
+            except requests.exceptions.RequestException:
+                GUI.msg = 'Check proxy fail.'
+        return False
 
     @staticmethod
     def get_thunder_url(url):
@@ -1037,35 +1036,41 @@ class Downloader(object):
             return VideoMeta(url, origin, title, duration)
 
     def php(self, origin):
-        for _ in range(1, 3):
+        for _ in range(1, 5):
             try:
-                r = self.session.get(origin, timeout=(2, 5))
+                r = self.session.get(
+                    origin,
+                    headers={
+                        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36'
+                    },
+                    timeout=(5))
                 scode = r.text
                 if 'qualityItems_' in scode:
-                    break
+                    match = find_one(r'flashvars_[^=]* = ([\s\S]*?);\n', scode)
+                    if not match:
+                        return None
+                    meta = json.loads(match)
+                    if meta:
+                        title = meta.get('video_title') or ''
+                        duration = meta.get('video_duration') or ''
+                        items = [
+                            i for i in meta.get('mediaDefinitions') or []
+                            if i.get('format') == 'mp4'
+                        ]
+                        items.sort(key=lambda i: int(i['quality'] if isinstance(
+                            i['quality'], str) else 0))
+                        if items and items[-1]['quality']:
+                            url = items[-1]['videoUrl']
+                            if '?' in origin:
+                                title = f'{title} - {parse_qsl(origin)[0][1]}'
+                            return VideoMeta(url, origin, title, duration)
             except requests.RequestException as e:
                 GUI.msg = str(e)
-                traceback.print_exc()
+                print(repr(e))
+                # traceback.print_exc()
                 continue
         else:
             return None
-        match = find_one(
-            r'var flashvars_[^=]* = ([\s\S]*?);\s*var player_mp4_seek', scode)
-        if not match:
-            return None
-        meta = json.loads(match)
-        if meta:
-            title = meta.get('video_title') or ''
-            duration = meta.get('video_duration') or ''
-            items = [
-                i for i in meta.get('mediaDefinitions') or []
-                if i.get('format') == 'mp4'
-            ]
-            if items:
-                url = items[0]['videoUrl']
-                if '?' in origin:
-                    title = f'{title} - {parse_qsl(origin)[0][1]}'
-                return VideoMeta(url, origin, title, duration)
 
     def add_queue(self, url, saving_path=SAVING_DIR):
         urls = {i.meta.origin for i in self.tasks}
