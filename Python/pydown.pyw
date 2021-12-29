@@ -11,6 +11,7 @@ import time
 import traceback
 import webbrowser
 from functools import partial
+from html import unescape
 from os import startfile
 from pathlib import Path
 from queue import Queue
@@ -22,6 +23,7 @@ import pyperclip
 import PySimpleGUI as sg
 import requests
 import urllib3
+
 '''
 TODO:
 1. retry
@@ -1040,30 +1042,21 @@ class Downloader(object):
             try:
                 r = self.session.get(
                     origin,
-                    headers={
-                        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36'
-                    },
-                    timeout=(5))
+                    headers={'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.84 Safari/537.36'},
+                    timeout=5)
                 scode = r.text
+                # print(scode)
                 if 'qualityItems_' in scode:
-                    match = find_one(r'flashvars_[^=]* = ([\s\S]*?);\n', scode)
+                    match = find_one(r'qualityItems_[^=]* = ([\s\S]*?);\n', scode)
                     if not match:
                         return None
-                    meta = json.loads(match)
+                    meta = json.loads(json.loads(match))
                     if meta:
-                        title = meta.get('video_title') or ''
-                        duration = meta.get('video_duration') or ''
-                        items = [
-                            i for i in meta.get('mediaDefinitions') or []
-                            if i.get('format') == 'mp4'
-                        ]
-                        items.sort(key=lambda i: int(i['quality'] if isinstance(
-                            i['quality'], str) else 0))
-                        if items and items[-1]['quality']:
-                            url = items[-1]['videoUrl']
-                            if '?' in origin:
-                                title = f'{title} - {parse_qsl(origin)[0][1]}'
-                            return VideoMeta(url, origin, title, duration)
+                        title = unescape(find_one(r'property="og:title" content="(.*?)" />', scode))
+                        url = [i['url'] for i in meta if i['url']][-1]
+                        if '?' in origin:
+                            title = f'{title} - {parse_qsl(origin)[0][1]}'
+                        return VideoMeta(url, origin, title, '')
             except requests.RequestException as e:
                 GUI.msg = str(e)
                 print(repr(e))
@@ -1132,4 +1125,5 @@ def test_new_parser():
 
 if __name__ == "__main__":
     main()
+    # print(Downloader.get_host_md5('https://'))
     # test_new_parser()
