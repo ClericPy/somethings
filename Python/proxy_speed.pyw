@@ -47,7 +47,7 @@ def update_color(window, avg_cost):
         color = '#FF5722'
     else:
         color = '#9E9E9E'
-    window['status_bar'].Update(background_color=color)
+    window['status_bar'].Update(background_color=color, value='%sms' % avg_cost)
 
 
 def async_print(window):
@@ -55,6 +55,7 @@ def async_print(window):
         if PAUSE:
             time.sleep(2)
             continue
+        window.BringToFront()
         err = ''
         req = tPool()
         tasks = [
@@ -99,60 +100,65 @@ def cd(secs):
 
 def main():
     global PROXY, TESTURL, INTERVAL, TRIALS, TIMEOUT, PAUSE
-    layouts = [[
-        sg.Button('Check Nodes',
-                  key='test_nodes',
-                  button_color=('black', 'white'),
-                  font=('mono', 16)),
-        sg.Button('Clear Output',
-                  key='clear_op',
-                  button_color=('black', 'white'),
-                  font=('mono', 16)),
-        sg.Button('Pause',
-                  key='pause',
-                  button_color=('white', 'green'),
-                  font=('mono', 16)),
-    ],
-               [
-                   sg.Text('Proxy   :', font=('mono', 16)),
-                   sg.Input(PROXY,
-                            key='current_proxy',
-                            change_submits=True,
-                            font=('mono', 16)),
-               ],
-               [
-                   sg.Text('Target  :', font=('mono', 16)),
-                   sg.Input(TESTURL,
-                            key='current_url',
-                            change_submits=True,
-                            font=('mono', 16))
-               ],
-               [
-                   sg.Text('Interval:', font=('mono', 16)),
-                   sg.Input(INTERVAL,
-                            key='current_interval',
-                            change_submits=True,
-                            font=('mono', 16)),
-               ],
-               [
-                   sg.Text('Trials  :', font=('mono', 16)),
-                   sg.Input(TRIALS,
-                            key='concurrent',
-                            change_submits=True,
-                            font=('mono', 16)),
-               ],
-               [
-                   sg.Text('Timeout :', font=('mono', 16)),
-                   sg.Input(TIMEOUT,
-                            key='timeout',
-                            change_submits=True,
-                            font=('mono', 16)),
-               ], [sg.StatusBar('', size=(999, 1), key='status_bar')],
-               [sg.Output(size=(999, 999), key='output', font=("", 16))]]
+    layouts = [
+        # [
+        #     sg.Button('Check Nodes',
+        #               key='test_nodes',
+        #               button_color=('black', 'white'),
+        #               font=('mono', 16)),
+        #     sg.Button('Clear Output',
+        #               key='clear_op',
+        #               button_color=('black', 'white'),
+        #               font=('mono', 16)),
+        #     sg.Button('Pause',
+        #               key='pause',
+        #               button_color=('white', 'green'),
+        #               font=('mono', 16)),
+        # ],
+        # [
+        #     sg.Text('Proxy   :', font=('mono', 16)),
+        #     sg.Input(PROXY,
+        #              key='current_proxy',
+        #              change_submits=True,
+        #              font=('mono', 16)),
+        # ],
+        # [
+        #     sg.Text('Target  :', font=('mono', 16)),
+        #     sg.Input(TESTURL,
+        #              key='current_url',
+        #              change_submits=True,
+        #              font=('mono', 16))
+        # ],
+        # [
+        #     sg.Text('Interval:', font=('mono', 16)),
+        #     sg.Input(INTERVAL,
+        #              key='current_interval',
+        #              change_submits=True,
+        #              font=('mono', 16)),
+        # ],
+        # [
+        #     sg.Text('Trials  :', font=('mono', 16)),
+        #     sg.Input(TRIALS,
+        #              key='concurrent',
+        #              change_submits=True,
+        #              font=('mono', 16)),
+        # ],
+        # [
+        #     sg.Text('Timeout :', font=('mono', 16)),
+        #     sg.Input(TIMEOUT,
+        #              key='timeout',
+        #              change_submits=True,
+        #              font=('mono', 16)),
+        # ],
+        # [sg.Output(size=(999, 7), key='output', font=("", 16))],
+        [sg.StatusBar('', size=(999, 1), key='status_bar')],
+    ]
     window = sg.Window(
         title=f'Speed Tester v{VERSION}',
         layout=layouts,
-        size=get_screensize(),
+        size=get_screensize() if len(layouts) > 1 else (10, 40),
+        resizable=True,
+        location=(0, 0),
     )
     window.Read(timeout=0)
     print('=' * 40)
