@@ -7,28 +7,22 @@ Store some scripts or snippets written by myself. Some GUI apps will build windo
 
 1. **Python**
 
-   1. pydown (GUI, exe, pyw)
+   1. pydown (GUI, exe, pyw, archived)
 
       > Simple downloader GUI for parsing special Websites.
       
       > pip install pyperclip requests[socks] PySimpleGUI
 
-   2. proxy_speed (GUI, exe, pyw)
-
-      > Check proxy speed for some cases.
-      
-      > pip install torequests pysocks PySimpleGUI
-
-   3. PyinstallerUI  (TUI, py, python -m)
+   2. PyinstallerUI  (TUI, py, python -m)
 
       > Terminal UI for PyInstaller.
       
       > Steps:
       >
       > 1. pip install pyinstallerui -U
-      >2. python -m pyinstallerui
+      > 2. python -m pyinstallerui
       
-   4. Bookmarks checker
+   3. Bookmarks checker
 
       > Steps:
       >
@@ -38,7 +32,7 @@ Store some scripts or snippets written by myself. Some GUI apps will build windo
       > 4. wait for checking finished
       > 5. open the bookmark.html in the browser
       
-   5. HTML image viewer
+   4. HTML image viewer
 
       > Find all the images in nested folders, generate the html file show them all.
       >
@@ -47,6 +41,28 @@ Store some scripts or snippets written by myself. Some GUI apps will build windo
       > 1. Recursively find pics in nested folders
       > 2. Fix the file name sorting issue like: 10.jpg < 2.jpg
       > 3. Auto fetch path from clipboard
+
+   5. Video Deleter
+
+      > Find all the images in nested folders, generate the html file show them all.
+      >
+      > Steps:
+      >
+      > 1. copy the folder path which includes video files
+      > 2. python3 video_deleter.pyw
+
+   6. NuitkaUI  (TUI)
+
+      > Terminal UI for nuitka, remember history build commands.
+      
+      > Steps:
+      >
+      > 1. pip install pyinstallerui -U
+      > 2. python -m pyinstallerui
+
+   7. proxy_speed (GUI, exe, pyw)
+
+      > I don't want to talk about this
 
 2. **Javascript**
    1. tampermonkey (Chrome -> Tampermonkey -> Utilities -> Install from URL)
