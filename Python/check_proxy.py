@@ -1,15 +1,17 @@
 import base64
+import fnmatch
 import json
 import os
 import socket
 import subprocess
 import time
 import urllib.request
-import fnmatch
 from pathlib import Path
 
 config_fname = base64.b85decode(
     base64.b85decode(b'SWH%4RaSdsOng{9XEjS=IBZ`')).decode('utf-8')
+log_fname = base64.b85decode(
+    base64.b85decode(b'Vqr%rLt-~@FgI0oJaj-sUNU53T2%')).decode('utf-8')
 config_fp = None
 good_indexes = set()
 wildcard = base64.b85decode(
@@ -43,10 +45,11 @@ def set_config(config):
 def try_index(index, name, AUTO_LOAD_BALANCE):
     config = get_config()
     disable_all(config)
-    if AUTO_LOAD_BALANCE:
-        max_cost = 1000
-    else:
-        max_cost = 500
+    # if AUTO_LOAD_BALANCE:
+    #     max_cost = 1000
+    # else:
+    #     max_cost = 500
+    max_cost = 2000
     config['index'] = index
     config['configs'][index]['enable'] = True
     print('开始:', config['configs'][index]['remarks'])
@@ -112,6 +115,8 @@ def main():
     file_path = get_file_path()
     config_fp = file_path.parent / config_fname
     os.chdir(file_path.parent.absolute().as_posix())
+    logs_path = file_path.parent / log_fname
+    log_data = json.loads(logs_path.read_text())
     name = file_path.name
     config = get_config()
     AUTO_LOAD_BALANCE = config['random']
@@ -120,19 +125,16 @@ def main():
     else:
         print('非负载均衡模式, 查找 500ms 以内的节点并切换')
     # print(config)
-    best = []
-    good = []
-    other = []
+    todos = []
     for index, c in enumerate(config['configs']):
         if c['method'] == 'chacha20':
             continue
-        if '香港' in c['remarks']:
-            best.append(index)
-        elif '日本' in c['remarks'] or '台湾' in c['remarks']:
-            good.append(index)
         else:
-            other.append(index)
-    for i in best + good + other:
+            weight = log_data.get(c.get('server'),
+                                  {}).get('totalDownloadBytes') or 0
+            todos.append((index, weight))
+    todos.sort(key=lambda i: i[1], reverse=True)
+    for i, _ in todos:
         if try_index(i, name, AUTO_LOAD_BALANCE):
             if not AUTO_LOAD_BALANCE:
                 break
