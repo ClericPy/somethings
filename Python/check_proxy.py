@@ -49,7 +49,7 @@ def try_index(index, name, AUTO_LOAD_BALANCE):
     #     max_cost = 1000
     # else:
     #     max_cost = 500
-    max_cost = 2000
+    max_cost = 3000
     config['index'] = index
     config['configs'][index]['enable'] = True
     print('开始:', config['configs'][index]['remarks'])
@@ -81,7 +81,7 @@ def try_index(index, name, AUTO_LOAD_BALANCE):
         start_time = time.time()
         # from torequests import tPool
         # print(tPool().get(TESTURL, proxies={'http': PROXY}).status_code == 204, round(time.time()-start_time, 3), '秒')
-        with urllib.request.urlopen(url, timeout=2) as response:
+        with urllib.request.urlopen(url, timeout=max_cost / 1000) as response:
             cost = round((time.time() - start_time) * 1000)
             code = response.getcode()
             ok = code == 204 and cost < max_cost
@@ -125,16 +125,21 @@ def main():
     else:
         print('非负载均衡模式, 查找 500ms 以内的节点并切换')
     # print(config)
+    config['configs'].sort(key=lambda i: str(i.get('remarks')))
     todos = []
     for index, c in enumerate(config['configs']):
         if c['method'] == 'chacha20':
             continue
         else:
             weight = log_data.get(c.get('server'),
-                                  {}).get('totalDownloadBytes') or 0
+                                  {}).get('totalDownloadBytes') or index
             todos.append((index, weight))
     todos.sort(key=lambda i: i[1], reverse=True)
+    total = len(todos)
+    count = 0
     for i, _ in todos:
+        count += 1
+        print(count, '/', total)
         if try_index(i, name, AUTO_LOAD_BALANCE):
             if not AUTO_LOAD_BALANCE:
                 break
