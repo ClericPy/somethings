@@ -51,14 +51,9 @@ Store some scripts or snippets written by myself. Some GUI apps will build windo
       > 1. copy the folder path which includes video files
       > 2. python3 video_deleter.pyw
 
-   6. NuitkaUI  (TUI)
+   6. NuitkaGUI
 
-      > Terminal UI for nuitka, remember history build commands.
-      
-      > Steps:
-      >
-      > 1. pip install pyinstallerui -U
-      > 2. python -m pyinstallerui
+      > https://github.com/ClericPy/nuitka_simple_gui
 
    7. proxy_speed (GUI, exe, pyw)
 
