@@ -7,6 +7,7 @@ import subprocess
 import time
 import urllib.request
 from pathlib import Path
+from random import random
 
 config_fname = base64.b85decode(
     base64.b85decode(b'SWH%4RaSdsOng{9XEjS=IBZ`')).decode('utf-8')
@@ -49,7 +50,7 @@ def try_index(index, name, AUTO_LOAD_BALANCE):
     #     max_cost = 1000
     # else:
     #     max_cost = 500
-    max_cost = 3000
+    max_cost = 2000
     config['index'] = index
     config['configs'][index]['enable'] = True
     print('开始:', config['configs'][index]['remarks'])
@@ -121,20 +122,32 @@ def main():
     config = get_config()
     AUTO_LOAD_BALANCE = config['random']
     if AUTO_LOAD_BALANCE:
-        print('检测到负载均衡模式, 保留 1000 ms 以内的所有节点')
+        print('负载均衡模式, 检查所有的')
     else:
-        print('非负载均衡模式, 查找 500ms 以内的节点并切换')
+        print('非负载均衡模式, 随机找一个较快的')
     # print(config)
-    config['configs'].sort(key=lambda i: str(i.get('remarks')))
+    config['configs'].sort(key=lambda i: str(i.get('remarks')), reverse=True)
     todos = []
+
+    def get_weight(c):
+        transfer = log_data.get(c.get('server'),
+                                {}).get('totalDownloadBytes') or 0
+        weight = random()
+        if b'\xff\xfe\x99\x99/n'.decode('utf-16') in c.get('remarks', ''):
+            weight += 1
+        if b'\xff\xfe[\x00V\x004\x00'.decode('utf-16') in c.get('remarks', ''):
+            weight += 1
+        return (weight, transfer)
+
     for index, c in enumerate(config['configs']):
         if c['method'] == 'chacha20':
             continue
         else:
-            weight = log_data.get(c.get('server'),
-                                  {}).get('totalDownloadBytes') or index
+            weight = get_weight(c) or index
+            # print(weight, c['remarks'])
             todos.append((index, weight))
     todos.sort(key=lambda i: i[1], reverse=True)
+    # quit()
     total = len(todos)
     count = 0
     for i, _ in todos:
