@@ -13,6 +13,7 @@ top = Tk()
 dir_path_str = top.clipboard_get()
 top.withdraw()
 top.update()
+top.destroy()
 TIMEOUT = 5
 IMAGE_WIDTH = '80%'
 valid_exts = {
@@ -159,8 +160,6 @@ def main():
         run(dir_path)
     except Exception as e:
         showerror('Error', repr(e))
-    finally:
-        top.destroy()
 
 
 if __name__ == "__main__":
