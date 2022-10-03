@@ -59,7 +59,7 @@ if dir_path_str.is_dir():
         # print(path, mime)
         if mime and mime[0] and mime[0].startswith('video'):
             to_deletes.append(path)
-    to_deletes.sort(key=lambda i: str(i))
+    to_deletes.sort(key=lambda i: i.stat().st_ctime)
     set_proc()
     btn1.grid(column=0, row=2)
     btn2.grid(column=1, row=2)
