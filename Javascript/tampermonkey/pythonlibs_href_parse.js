@@ -3,10 +3,10 @@
 // @namespace    https://github.com/ClericPy/somethings
 // @version      0.7
 // @author       Clericpy
+// @description  try to take over the world!
 // @match        https://www.lfd.uci.edu/~gohlke/pythonlibs/*
 // @updateURL    https://raw.githubusercontent.com/ClericPy/somethings/master/Javascript/tampermonkey/pythonlibs_href_parse.js
 // @downloadURL  https://raw.githubusercontent.com/ClericPy/somethings/master/Javascript/tampermonkey/pythonlibs_href_parse.js
-
 // ==/UserScript==
 
 (function () {
