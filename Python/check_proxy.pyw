@@ -22,7 +22,7 @@ wildcard = base64.b85decode(
 results = []
 
 
-def alert(message, title='', args=0x0 | 0x40000):
+def alert(message, title='', args=0x0 | 0x40000 | 0x10000):
     return ctypes.windll.user32.MessageBoxExW(0, message, title, args)
 
 
