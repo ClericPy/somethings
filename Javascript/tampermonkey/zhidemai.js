@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         什么值得买抓取评论
 // @namespace    https://github.com/ClericPy/somethings
-// @version      0.4
+// @version      0.5
 // @description  什么值得买
 // @author       Clericpy
 // @match        http*://*.smzdm.com/*
@@ -122,13 +122,14 @@
                 return
             }
             let title = title_tag.innerText.trim().replace(/\n/g, ' ')
-            let item = doc.querySelector('a.feed-btn-comment')
+            let item = doc.querySelector('a.feed-btn-comment,a[class="z-group-data"]')
             if (!item) {
                 return
             }
             if (item.title == '评论数 0') {
                 return
             }
+            doc.style = 'background-color: rgb(255 244 150 / 49%);'
             let button = document.createElement('button')
             button.id = encodeURIComponent(item.href)
             button.setAttribute('onclick', `load_cmts('${item.href}', true, '${button.id}', '${title}', [])`)
@@ -143,7 +144,7 @@
             button2.className = 'custom_cmts'
             item.parentNode.appendChild(button2)
         })
-        let temp_node = document.querySelector('.search-feedback')
+        let temp_node = document.querySelector('.feed-pagenation')
         let head = document.createElement('h2')
         head.id = 'show_node_head'
         head.innerHTML = '<b style="font-size: 1.5em;">评论列表</b><br><span id="crawl_msg"></span>'
