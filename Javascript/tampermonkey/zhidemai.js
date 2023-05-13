@@ -1,10 +1,10 @@
 // ==UserScript==
 // @name         什么值得买抓取评论
 // @namespace    https://github.com/ClericPy/somethings
-// @version      0.3
+// @version      0.4
 // @description  什么值得买
 // @author       Clericpy
-// @match        http*://search.smzdm.com/*
+// @match        http*://*.smzdm.com/*
 // @grant        GM_xmlhttpRequest
 // @connect      www.smzdm.com
 // @connect      post.smzdm.com
@@ -117,12 +117,15 @@
         padding: 4px 12px;
       }`
         document.querySelectorAll('#feed-main-list>li').forEach((doc) => {
-            let title_tag = doc.querySelector('.feed-block-title')
+            let title_tag = doc.querySelector('.feed-block-title,.feed-shaiwu-title')
             if (!title_tag) {
                 return
             }
             let title = title_tag.innerText.trim().replace(/\n/g, ' ')
             let item = doc.querySelector('a.feed-btn-comment')
+            if (!item) {
+                return
+            }
             if (item.title == '评论数 0') {
                 return
             }
