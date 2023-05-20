@@ -11,6 +11,7 @@ import urllib.request
 from dataclasses import dataclass, field
 from pathlib import Path
 from random import random
+from threading import Thread
 
 config_fname = base64.b85decode(
     base64.b85decode(b'SWH%4RaSdsOng{9XEjS=IBZ`')).decode('utf-8')
@@ -21,6 +22,7 @@ good_indexes = set()
 wildcard = base64.b85decode(
     base64.b85decode(b'Q7Le6X<92oPF7ZXGeaXqXggOVV|X(')).decode('utf-8')
 test_dir_name = 'test_speed_cache'
+max_cost = 1000
 results = []
 runner: 'Runner' = None
 
@@ -33,15 +35,32 @@ class Proc:
 
     def restart(self):
         self.kill()
+        self.start()
+
+    def start(self):
         os.startfile(str(self.path))
+
+    def wait_start(self):
+        for _ in range(5):
+            if self:
+                return True
+            # print(bool(self), _, flush=True)
+            time.sleep(0.2)
+        else:
+            return False
 
     def kill(self):
         if self:
             cmd = 'taskkill /PID %s' % self.pid
-            with os.popen(cmd):
-                pass
-            time.sleep(0.5)
-            if self:
+            for _ in range(2):
+                print(self.name, bool(self), self.path, flush=True)
+                with os.popen(cmd):
+                    pass
+                print(self.name, bool(self), self.path, flush=True)
+                if not self:
+                    break
+                # time.sleep(0.1)
+            else:
                 cmd += ' /F'
                 with os.popen(cmd):
                     pass
@@ -65,11 +84,15 @@ class RunningInstance:
 
     def restart(self):
         self.kill()
-        self.main.restart()
+        self.main.start()
+        # self.temp.wait_start()
+        # self.temp.kill()
 
     def kill(self):
-        self.main.kill()
-        self.temp.kill()
+        if self.temp:
+            self.temp.kill()
+        if self.main:
+            self.main.kill()
 
 
 class Runner:
@@ -141,7 +164,6 @@ def set_config(config):
 def try_index(index):
     config = get_config()
     disable_all(config)
-    max_cost = 1500
     config['index'] = index
     config['configs'][index]['enable'] = True
     remarks = config['configs'][index]['remarks']
@@ -150,14 +172,15 @@ def try_index(index):
     localPort = config['localPort']
     PROXY = f'http://127.0.0.1:{localPort}'
     runner.test.restart()
-    for _ in range(5):
+    for _ in range(12):
         try:
             connection = socket.create_connection(('127.0.0.1', localPort),
                                                   timeout=1)
             connection.close()
             break
         except (socket.timeout, socket.gaierror):
-            traceback.print_exc()
+            # traceback.print_exc()
+            pass
     else:
         # 没启动起来
         runner.test.kill()
@@ -204,6 +227,7 @@ def get_running_exe_file_path():
 
 
 def prepare_test_path():
+    ss = time.time()
     running_exe_path = get_running_exe_file_path()
     running_dir = running_exe_path.parent
     test_dir = (running_dir / test_dir_name)
@@ -224,12 +248,15 @@ def prepare_test_path():
                               encoding='utf-8')
     runner.test.kill()
     os.startfile(str(test_exe_path))
+    # runner.test.temp.wait_start()
+    # runner.test.temp.kill()
     return test_exe_path
 
 
 def main():
     global test_config_fp, runner
     try:
+        start_at = time.time()
         runner = Runner()
         test_exe_path = prepare_test_path()
         test_config_fp = test_exe_path.parent / config_fname
@@ -278,17 +305,22 @@ def main():
             else:
                 print('关闭', c['remarks'])
                 c['enable'] = False
+        Thread(target=runner.test.kill).start()
         set_config(config)
         config['localPort'] -= 1
         (runner.main.main.path.parent / config_fname).write_text(
             json.dumps(config, ensure_ascii=False, indent=2), encoding='utf-8')
-        runner.main.restart()
+        Thread(target=runner.main.restart).start()
     except Exception:
         results.append(traceback.format_exc())
     finally:
         runner.test.kill()
-        alert('%s' % ('\n'.join(results)))
-        # print('%s' % ('\n'.join(results)))
+        msg = '%s\n\ntime cost: %ss' % (
+            '\n'.join(results),
+            int(time.time() - start_at),
+        )
+        print(msg)
+        alert(msg)
 
 
 if __name__ == "__main__":
