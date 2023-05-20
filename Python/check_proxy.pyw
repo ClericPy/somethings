@@ -40,7 +40,7 @@ class Proc:
             cmd = 'taskkill /PID %s' % self.pid
             with os.popen(cmd):
                 pass
-            time.sleep(0.2)
+            time.sleep(0.5)
             if self:
                 cmd += ' /F'
                 with os.popen(cmd):
@@ -68,8 +68,8 @@ class RunningInstance:
         self.main.restart()
 
     def kill(self):
-        self.temp.kill()
         self.main.kill()
+        self.temp.kill()
 
 
 class Runner:
