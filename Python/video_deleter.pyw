@@ -4,9 +4,13 @@ import os
 import shutil
 import time
 from pathlib import Path
+from queue import Queue
+from threading import Thread, Timer
 from tkinter import Button, Label, StringVar, Tk
 
 output_dir = Path(r'F:\aaaa\target')
+moving = 0
+output_q = Queue()
 
 
 def shutdown():
@@ -18,6 +22,7 @@ def shutdown():
 
 def set_proc():
     if index < len(to_deletes):
+        root.title('Moving: %s' % (output_q.qsize() + moving))
         path: Path = to_deletes[index]
         current_name.set(path.name)
         proc.set(
@@ -25,47 +30,75 @@ def set_proc():
         )
         os.startfile(str(path.absolute()))
     else:
+        output_q.put((None, None))
+        task.join()
         quit()
 
 
 def aaa():
     global index
-    aaa_path = output_dir / 'A'
-    aaa_path.mkdir(parents=True, exist_ok=True)
+    tp = output_dir / 'A'
+    tp.mkdir(parents=True, exist_ok=True)
     path: Path = to_deletes[index]
     index += 1
-    path.rename(aaa_path / path.name)
+    # path.rename(tp / path.name)
+    # Thread(target=shutil.move,
+    #        args=(path.as_posix(), (tp / path.name).as_posix())).start()
+    output_q.put((path.as_posix(), (tp / path.name).as_posix()))
     set_proc()
 
 
 def bbb():
     global index
-    bbb_path = output_dir / 'B'
-    bbb_path.mkdir(parents=True, exist_ok=True)
+    tp = output_dir / 'B'
+    tp.mkdir(parents=True, exist_ok=True)
     path: Path = to_deletes[index]
     index += 1
-    path.rename(bbb_path / path.name)
+    # path.rename(tp / path.name)
+    # Thread(target=shutil.move,
+    #        args=(path.as_posix(), (tp / path.name).as_posix())).start()
+    output_q.put((path.as_posix(), (tp / path.name).as_posix()))
     set_proc()
 
 
 def ccc():
     global index
-    ccc_path = output_dir / 'C'
-    ccc_path.mkdir(parents=True, exist_ok=True)
+    tp = output_dir / 'C'
+    tp.mkdir(parents=True, exist_ok=True)
     path: Path = to_deletes[index]
     index += 1
-    path.rename(ccc_path / path.name)
+    # path.rename(tp / path.name)
+    # Thread(target=shutil.move,
+    #        args=(path.as_posix(), (tp / path.name).as_posix())).start()
+    output_q.put((path.as_posix(), (tp / path.name).as_posix()))
     set_proc()
 
 
 def ddd():
     global index
-    ddd_path = output_dir / 'D'
-    ddd_path.mkdir(parents=True, exist_ok=True)
+    tp = output_dir / 'D'
+    tp.mkdir(parents=True, exist_ok=True)
     path: Path = to_deletes[index]
     index += 1
-    path.rename(ddd_path / path.name)
+    # path.rename(tp / path.name)
+    Timer(2, path.unlink).start()
+    # Thread(target=shutil.move,
+    #        args=(path.as_posix(), (tp / path.name).as_posix())).start()
     set_proc()
+
+
+def deliver():
+    global moving
+    while True:
+        a, b = output_q.get()
+        if a is None:
+            break
+        root.title('Moving: %s' % (output_q.qsize() + 1))
+        moving = 1
+        shutil.move(a, b)
+        print('Left: %s' % output_q.qsize())
+        moving = 0
+        root.title('Moving: %s' % output_q.qsize())
 
 
 atexit.register(shutdown)
@@ -86,7 +119,8 @@ Button(root, text='ccc', command=ccc, width=20, height=2).grid(column=0, row=3)
 Button(root, text='ddd', command=ddd, width=20, height=2).grid(column=1, row=3)
 root.attributes('-topmost', True)
 root.update()
-
+task = Thread(target=deliver)
+task.start()
 while True:
     dir_path_str = Path(root.clipboard_get())
     if dir_path_str.is_dir():
@@ -96,9 +130,14 @@ while True:
             if mime and mime[0] and mime[0].startswith('video'):
                 to_deletes.append(path)
         to_deletes.sort(key=lambda i: i.stat().st_ctime)
-        to_deletes.sort(key=lambda i: i.stat().st_size, reverse=True)
+        # to_deletes.sort(key=lambda i: i.stat().st_size, reverse=True)
+        # to_deletes.sort(key=lambda i: i.stat().st_size, reverse=True)
         set_proc()
         break
     else:
         time.sleep(1)
-root.mainloop()
+try:
+    root.mainloop()
+finally:
+    output_q.put((None, None))
+    task.join()
