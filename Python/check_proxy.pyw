@@ -227,7 +227,6 @@ def get_running_exe_file_path():
 
 
 def prepare_test_path():
-    ss = time.time()
     running_exe_path = get_running_exe_file_path()
     running_dir = running_exe_path.parent
     test_dir = (running_dir / test_dir_name)
@@ -310,7 +309,8 @@ def main():
         config['localPort'] -= 1
         (runner.main.main.path.parent / config_fname).write_text(
             json.dumps(config, ensure_ascii=False, indent=2), encoding='utf-8')
-        Thread(target=runner.main.restart).start()
+        # Thread(target=runner.main.restart).start()
+        runner.main.restart()
     except Exception:
         results.append(traceback.format_exc())
     finally:
