@@ -252,6 +252,14 @@ def prepare_test_path():
     return test_exe_path
 
 
+def beep():
+    kernel32 = ctypes.WinDLL('kernel32', use_last_error=True)
+    frequency = 800
+    duration = 200
+    kernel32.Beep(frequency, duration)
+    kernel32.Beep(frequency, duration)
+
+
 def main():
     global test_config_fp, runner
     try:
@@ -319,6 +327,7 @@ def main():
             '\n'.join(results),
             int(time.time() - start_at),
         )
+        beep()
         print(msg)
         alert(msg)
 
