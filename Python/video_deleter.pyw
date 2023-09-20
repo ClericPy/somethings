@@ -13,16 +13,13 @@ moving = 0
 output_q = Queue()
 
 
-def shutdown():
-    print(index, len(to_deletes))
-    # if index == len(to_deletes):
-    if (output_dir / 'D').is_dir():
-        shutil.rmtree(str(output_dir / 'D'))
+def get_doing():
+    return len([1 for i in output_q.queue if i[0]]) + moving
 
 
 def set_proc():
     if index < len(to_deletes):
-        root.title('Moving: %s' % (output_q.qsize() + moving))
+        root.title('Moving: %s' % get_doing())
         path: Path = to_deletes[index]
         current_name.set(path.name)
         proc.set(
@@ -31,8 +28,8 @@ def set_proc():
         os.startfile(str(path.absolute()))
     else:
         output_q.put((None, None))
-        task.join()
-        quit()
+        # task.join()
+        # quit()
 
 
 def aaa():
@@ -93,15 +90,14 @@ def deliver():
         a, b = output_q.get()
         if a is None:
             break
-        root.title('Moving: %s' % (output_q.qsize() + 1))
+        root.title('Moving: %s' % get_doing())
         moving = 1
         shutil.move(a, b)
-        print('Left: %s' % output_q.qsize())
         moving = 0
-        root.title('Moving: %s' % output_q.qsize())
+        root.title('Moving: %s' % get_doing())
+    root.destroy()
 
 
-atexit.register(shutdown)
 index = 0
 to_deletes = []
 root = Tk()
@@ -129,8 +125,8 @@ while True:
             # print(path, mime)
             if mime and mime[0] and mime[0].startswith('video'):
                 to_deletes.append(path)
-        to_deletes.sort(key=lambda i: i.stat().st_ctime)
-        # to_deletes.sort(key=lambda i: i.stat().st_size, reverse=True)
+        # to_deletes.sort(key=lambda i: i.stat().st_ctime)
+        to_deletes.sort(key=lambda i: i.stat().st_size, reverse=True)
         # to_deletes.sort(key=lambda i: i.stat().st_size, reverse=True)
         set_proc()
         break
