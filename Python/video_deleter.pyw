@@ -71,6 +71,19 @@ def ccc():
     set_proc()
 
 
+def eee():
+    global index
+    tp = output_dir / 'E'
+    tp.mkdir(parents=True, exist_ok=True)
+    path: Path = to_deletes[index]
+    index += 1
+    # path.rename(tp / path.name)
+    # Thread(target=shutil.move,
+    #        args=(path.as_posix(), (tp / path.name).as_posix())).start()
+    output_q.put((path.as_posix(), (tp / path.name).as_posix()))
+    set_proc()
+
+
 def ddd():
     global index
     tp = output_dir / 'D'
@@ -113,6 +126,7 @@ Button(root, text='aaa', command=aaa, width=20, height=2).grid(column=0, row=2)
 Button(root, text='bbb', command=bbb, width=20, height=2).grid(column=1, row=2)
 Button(root, text='ccc', command=ccc, width=20, height=2).grid(column=0, row=3)
 Button(root, text='ddd', command=ddd, width=20, height=2).grid(column=1, row=3)
+Button(root, text='eee', command=eee, width=20, height=2).grid(column=0, row=4)
 root.attributes('-topmost', True)
 root.update()
 task = Thread(target=deliver)
