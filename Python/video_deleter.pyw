@@ -84,6 +84,15 @@ def eee():
     set_proc()
 
 
+
+def fff():
+    global index
+    index += 1
+    # path.rename(tp / path.name)
+    # Thread(target=shutil.move,
+    #        args=(path.as_posix(), (tp / path.name).as_posix())).start()
+    set_proc()
+
 def ddd():
     global index
     tp = output_dir / 'D'
@@ -117,7 +126,7 @@ root = Tk()
 proc = StringVar()
 current_name = StringVar()
 root.title('Choose a folder')
-root.geometry('310x150+900+600')
+root.geometry('310x200+900+600')
 proc_l = Label(root, textvariable=proc, width=40, background='white')
 proc_l.grid(row=0, columnspan=2)
 label1 = Label(root, textvariable=current_name, width=40, background='white')
@@ -125,7 +134,8 @@ label1.grid(row=1, columnspan=2)
 Button(root, text='aaa', command=aaa, width=20, height=2).grid(column=0, row=2)
 Button(root, text='bbb', command=bbb, width=20, height=2).grid(column=1, row=2)
 Button(root, text='ccc', command=ccc, width=20, height=2).grid(column=0, row=3)
-Button(root, text='ddd', command=ddd, width=20, height=2).grid(column=1, row=3)
+Button(root, text='fff', command=fff, width=20, height=2).grid(column=1, row=3)
+Button(root, text='ddd', command=ddd, width=20, height=2).grid(column=1, row=4)
 Button(root, text='eee', command=eee, width=20, height=2).grid(column=0, row=4)
 root.attributes('-topmost', True)
 root.update()
