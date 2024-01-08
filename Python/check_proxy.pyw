@@ -103,6 +103,8 @@ class Singleton(object):
     pid_path: Path = None
 
     def __init__(self):
+        if not get_running_exe_file_path():
+            raise RuntimeError('no ssr')
         if not self.pid_path:
             path = get_running_exe_file_path()
             # rm pid.txt to stop running
@@ -112,6 +114,8 @@ class Singleton(object):
         self.pid_path.write_text(str(os.getpid()))
 
     def ensure_pid(self):
+        if not get_running_exe_file_path():
+            raise RuntimeError('no main process')
         if self.pid_path.is_file():
             running_pid = self.pid_path.read_text().strip()
         else:
@@ -321,7 +325,6 @@ def _main(force=True):
     results.clear()
     good_indexes.clear()
     start_at = time.time()
-    need_try = False
     try:
         if not force:
             for _ in range(2):
@@ -329,7 +332,6 @@ def _main(force=True):
                 if ok:
                     # beep(1000, 500, 1)
                     return
-        need_try = True
         test_exe_path = prepare_test_path()
         test_config_fp = test_exe_path.parent / config_fname
         os.chdir(test_exe_path.parent.absolute().as_posix())
@@ -375,13 +377,14 @@ def _main(force=True):
                 print("关闭", c["remarks"])
                 c["enable"] = False
         Thread(target=runner.test.kill).start()
-        set_config(config)
-        config["localPort"] -= 1
-        (runner.main.main.path.parent / config_fname).write_text(
-            json.dumps(config, ensure_ascii=False, indent=2), encoding="utf-8"
-        )
-        # Thread(target=runner.main.restart).start()
-        runner.main.restart()
+        if good_indexes:
+            set_config(config)
+            config["localPort"] -= 1
+            (runner.main.main.path.parent / config_fname).write_text(
+                json.dumps(config, ensure_ascii=False, indent=2), encoding="utf-8"
+            )
+            # Thread(target=runner.main.restart).start()
+            runner.main.restart()
     except Exception as e:
         results.append(traceback.format_exc())
         alert(repr(e))
@@ -392,11 +395,10 @@ def _main(force=True):
             "\n".join(results),
             int(time.time() - start_at),
         )
-        # if need_try:
-        #     if good_indexes:
-        #         beep(500, 200)
-        #     else:
-        #         beep(1000, 200)
+        # if good_indexes:
+        #     beep(500, 200)
+        # else:
+        #     beep(1000, 200)
         return msg
 
 
@@ -412,11 +414,11 @@ def main():
                 Singleton().ensure_pid()
                 msg = _main(force=force)
                 print(msg, flush=True)
-                for _ in range(60):
+                for _ in range(30):
                     time.sleep(1)
                     Singleton().ensure_pid()
-    except Exception as e:
-        alert(repr(e))
+    except Exception:
+        alert(traceback.format_exc())
 
 
 if __name__ == "__main__":
