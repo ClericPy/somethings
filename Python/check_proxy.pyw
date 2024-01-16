@@ -167,7 +167,14 @@ class Runner:
             flag = "*" + wildcard + "*"
             for line in lines:
                 if fnmatch.fnmatch(line, flag):
-                    name, path, *_, pid = line.strip("\n").split()
+                    try:
+                        _args = line.strip("\n").split()
+                        if len(_args) < 3:
+                            continue
+                        name, path, *_, pid = _args
+                    except Exception:
+                        alert('%s\n%s\n%s' % (cmd, line, traceback.format_exc()))
+                        raise
                     path = Path(path.strip(r''''"'''))
                     abs_path = path.absolute().as_posix()
                     is_test = f"/{test_dir_name}/" in abs_path
