@@ -334,7 +334,7 @@ def _main(force=True):
     start_at = time.time()
     try:
         if not force:
-            for _ in range(2):
+            for _ in range(3):
                 ok = check_proxy(None)
                 if ok:
                     # beep(1000, 500, 1)

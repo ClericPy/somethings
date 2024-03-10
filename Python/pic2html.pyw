@@ -186,13 +186,20 @@ def run(dir_path: Path):
         value[1].append(f"{prefix}:{src}")
     if not container:
         raise FileNotFoundError(f"No pics? {valid_exts}")
-    HTML = f'<html>{STYLE}<body><ol id="name-list"><input id="range" type="range" min="0" max="100" value="{IMAGE_WIDTH[:-1]}" step="1" oninput="range_change()"> <span id="width"> width: {IMAGE_WIDTH}</span> <br>(double click image to view)'
+    HTML = f'<html>{STYLE}<body><ol id="name-list"><input id="range" type="range" min="0" max="100" value="{IMAGE_WIDTH[:-1]}" step="1" oninput="range_change()"> <span id="width"> width: {IMAGE_WIDTH}</span>'
+    total_size = 0
+    total_pics = 0
     for h2_str, value in container.items():
         size, srcs = value
+        total_size += size
+        total_pics += len(srcs)
         srcs.sort()
         container[h2_str] = [size, [src.split(":", 1)[1] for src in srcs]]
         HTML += f'<li><a href="#{md5(h2_str)}">{escape(h2_str)} ({len(srcs)}) - {read_size(size)}</a></li>'
-    HTML += '</ol><div class="articles">'
+    HTML += '<h5>%s pics - %s, double click image to view</h5></ol><div class="articles">' % (
+        total_pics,
+        read_size(total_size),
+    )
     for h2_str, value in container.items():
         _, srcs = value
         key_id = md5(h2_str)
