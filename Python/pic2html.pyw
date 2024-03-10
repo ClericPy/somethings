@@ -1,4 +1,5 @@
 import re
+import traceback
 import webbrowser
 from functools import lru_cache
 from hashlib import md5 as _md5
@@ -49,6 +50,8 @@ valid_exts = {
 # lazy load images
 JS = """
 <script>
+window.todo_els = []
+do_images()
 let ww = document.body.clientWidth
 let wh = document.body.clientHeight
 document.addEventListener('dblclick', on_dblclick);
@@ -66,18 +69,30 @@ function preloadImage(el){
     el.setAttribute('src', el.getAttribute('data-src'))
     el.removeAttribute('data-src')
 }
+function do_images() {
+    for (let index = 0; index < window.todo_els.length; index++) {
+        if (index >= 10) {
+            break
+        }
+        preloadImage(window.todo_els.shift());
+    }
+    setTimeout(() => {
+        do_images()
+    }, 50);
+}
+
 function onIntersection(entries) {
     entries.forEach(entry => {
         if (entry.intersectionRatio > 0) {
             observer.unobserve(entry.target);
-            preloadImage(entry.target);
+            window.todo_els.push(entry.target);
         }
     });
 }
 function range_change(){
     var value = document.getElementById('range').value ;
     document.getElementById('width').innerHTML = ' width: ' + value + '%';
-    document.getElementById('new_width').innerHTML = '.pic{width:' + value + '%;}'
+    document.getElementById('new_width').innerHTML = '.pic{width:' + value*0.999 + '%;}'
 }
 if (!('IntersectionObserver' in window)) {
     Array.from(images).forEach(image => preloadImage(image));
@@ -123,6 +138,17 @@ def get_relative_path(p: Path, root):
     return root.joinpath(*result)
 
 
+def read_size(size: int):
+    if size > 1024**3:
+        return "%s GB" % round(size / 1024**3, 1)
+    elif size > 1024**2:
+        return "%s MB" % round(size / 1024**2)
+    elif size > 1024**1:
+        return "%s KB" % round(size / 1024**1)
+    else:
+        return "%s B" % size
+
+
 def run(dir_path: Path):
     global TIMEOUT
     root_string = dir_path.as_posix()
@@ -151,25 +177,29 @@ def run(dir_path: Path):
             start_time = time()
         parent = i.parent
         rp = get_relative_path(parent, dir_path)
-        h2 = container.setdefault(rp.name, [])
         new_rp: Path = (rp / i.name).as_posix()
         src = str(new_rp).replace(root_string, ".")
         nums = re.findall(r"\d+", src)
         prefix = "".join([num.rjust(10, "0") for num in nums])
-        h2.append(f"{prefix}:{src}")
+        value = container.setdefault(rp.name, [0, []])
+        value[0] += i.stat().st_size
+        value[1].append(f"{prefix}:{src}")
     if not container:
         raise FileNotFoundError(f"No pics? {valid_exts}")
-    HTML = f'<html>{STYLE}<body><ol id="name-list"><input id="range" type="range" min="0" max="100" value="{IMAGE_WIDTH[:-1]}" step="1" oninput="range_change()"> <span id="width"> width: {IMAGE_WIDTH}</span>'
-    for h2_str, srcs in container.items():
+    HTML = f'<html>{STYLE}<body><ol id="name-list"><input id="range" type="range" min="0" max="100" value="{IMAGE_WIDTH[:-1]}" step="1" oninput="range_change()"> <span id="width"> width: {IMAGE_WIDTH}</span> <br>(double click image to view)'
+    for h2_str, value in container.items():
+        size, srcs = value
         srcs.sort()
-        container[h2_str] = [src.split(":", 1)[1] for src in srcs]
-        HTML += f'<li><a href="#{md5(h2_str)}">{escape(h2_str)} ({len(srcs)})</a></li>'
+        container[h2_str] = [size, [src.split(":", 1)[1] for src in srcs]]
+        HTML += f'<li><a href="#{md5(h2_str)}">{escape(h2_str)} ({len(srcs)}) - {read_size(size)}</a></li>'
     HTML += '</ol><div class="articles">'
-    for h2_str, srcs in container.items():
-        HTML += f'<div class="article"><hr><h2 title="Click scoll to the top" id="{md5(h2_str)}">{escape(h2_str)}</h2><hr>'
+    for h2_str, value in container.items():
+        _, srcs = value
+        key_id = md5(h2_str)
+        HTML += f'<div class="article"><hr><h2 title="Click scoll to the top" id="{key_id}">{escape(h2_str)}</h2><hr>'
         HTML += "\n".join(
             [
-                f"""<div class="pic"><img class="lazy-load" title="double click to view" data-src="{src}" alt="Loading" /><div class="path">{src}</div></div>"""
+                f"""<div class="pic"><img class="lazy-load" src="data:image/gif;base64,R0lGODlhAQABAIAAAAUEBAAAACwAAAAAAQABAAACAkQBADs=" data-src="{src}" alt="" /><div class="path">{src}</div></div>"""
                 for src in srcs
             ]
         )
@@ -188,8 +218,8 @@ def main():
         if not dir_path.is_dir():
             raise FileNotFoundError(f"{dir_path} is not valid dir path.")
         run(dir_path)
-    except Exception as e:
-        showerror("Error", repr(e))
+    except Exception:
+        showerror("Error", traceback.format_exc())
 
 
 if __name__ == "__main__":
