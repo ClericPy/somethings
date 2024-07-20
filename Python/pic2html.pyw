@@ -189,25 +189,33 @@ def run(dir_path: Path):
     HTML = f'<html>{STYLE}<body><ol id="name-list"><input id="range" type="range" min="0" max="100" value="{IMAGE_WIDTH[:-1]}" step="1" oninput="range_change()"> <span id="width"> width: {IMAGE_WIDTH}</span>'
     total_size = 0
     total_pics = 0
+    index = 0
     for h2_str, value in container.items():
+        index += 1
         size, srcs = value
         total_size += size
         total_pics += len(srcs)
         srcs.sort()
         container[h2_str] = [size, [src.split(":", 1)[1] for src in srcs]]
-        HTML += f'<li><a href="#{md5(h2_str)}">{escape(h2_str)} ({len(srcs)}) - {read_size(size)}</a></li>'
-    HTML += '<h5>%s pics - %s, double click image to view</h5></ol><div class="articles">' % (
-        total_pics,
-        read_size(total_size),
+        HTML += f'<li><a href="#{md5(h2_str)}____{index}">{escape(h2_str)} ({len(srcs)}) - {read_size(size)}</a></li>'
+    HTML += (
+        '<h5>%s pics - %s, double click image to view</h5></ol><div class="articles">'
+        % (
+            total_pics,
+            read_size(total_size),
+        )
     )
+    index = 0
+    total = len(container)
     for h2_str, value in container.items():
+        index += 1
         _, srcs = value
         key_id = md5(h2_str)
-        HTML += f'<div class="article"><hr><h2 title="Click scoll to the top" id="{key_id}">{escape(h2_str)}</h2><hr>'
+        HTML += f'<div class="article"><hr><h2 title="Click scoll to the top" id="{key_id}____{index}">{index}/{total}. {escape(h2_str)}</h2><hr>'
         HTML += "\n".join(
             [
-                f"""<div class="pic"><img class="lazy-load" src="data:image/gif;base64,R0lGODlhAQABAIAAAAUEBAAAACwAAAAAAQABAAACAkQBADs=" data-src="{src}" alt="" /><div class="path">{src}</div></div>"""
-                for src in srcs
+                f"""<div class="pic"><img class="lazy-load" src="data:image/gif;base64,R0lGODlhAQABAIAAAAUEBAAAACwAAAAAAQABAAACAkQBADs=" data-src="{src}" alt="" /><div class="path">({index}/{total}|{_idx}/{len(srcs)})|{src}</div></div>"""
+                for _idx, src in enumerate(srcs, 1)
             ]
         )
         HTML += "</div>"

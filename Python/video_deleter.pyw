@@ -1,4 +1,3 @@
-import atexit
 import mimetypes
 import os
 import shutil
@@ -63,6 +62,7 @@ def ccc():
     tp = output_dir / "C"
     tp.mkdir(parents=True, exist_ok=True)
     path: Path = to_deletes[index]
+    # print(to_deletes, index, flush=True)
     index += 1
     # path.rename(tp / path.name)
     # Thread(target=shutil.move,
@@ -117,7 +117,7 @@ def deliver():
         shutil.move(a, b)
         moving = 0
         root.title("Moving: %s" % get_doing())
-    root.destroy()
+    # root.destroy()
 
 
 index = 0
@@ -135,28 +135,28 @@ Button(root, text="fff", command=fff, width=20, height=2).grid(column=1, row=1)
 Button(root, text="ddd", command=ddd, width=20, height=2).grid(column=1, row=2)
 Button(root, text="eee", command=eee, width=20, height=2).grid(column=0, row=2)
 Label(root, textvariable=proc, width=40, background="white").grid(row=3, columnspan=2)
-Label(root, textvariable=current_name, background="white", wraplength=300).grid(row=4, columnspan=2)
+Label(root, textvariable=current_name, background="white", wraplength=300).grid(
+    row=4, columnspan=2
+)
 root.attributes("-topmost", True)
 root.update()
-task = Thread(target=deliver)
+task = Thread(target=deliver, daemon=True)
 task.start()
-while True:
-    dir_path_str = Path(root.clipboard_get())
-    if dir_path_str.is_dir():
-        for path in dir_path_str.glob("**/*"):
-            mime = mimetypes.guess_type(path)
-            # print(path, mime)
-            if mime and mime[0] and mime[0].startswith("video"):
-                to_deletes.append(path)
+dir_path_str = Path(root.clipboard_get())
+if dir_path_str.is_dir():
+    for path in dir_path_str.glob("**/*"):
+        mime = mimetypes.guess_type(path)
+        # print(path, mime)
+        if mime and mime[0] and mime[0].startswith("video"):
+            to_deletes.append(path)
+    # print(to_deletes, flush=True)
+    if to_deletes:
         # to_deletes.sort(key=lambda i: i.stat().st_ctime)
         to_deletes.sort(key=lambda i: i.stat().st_size, reverse=True)
         # to_deletes.sort(key=lambda i: str(i), reverse=True)
         set_proc()
-        break
-    else:
-        time.sleep(1)
-try:
-    root.mainloop()
-finally:
-    output_q.put((None, None))
-    task.join()
+        try:
+            root.mainloop()
+        finally:
+            output_q.put((None, None))
+            task.join()
