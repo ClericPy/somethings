@@ -25,7 +25,7 @@ try:
     code = os.system("ffmpeg -version")
     if code != 0:
         raise RuntimeError("ffmpeg not found!")
-    url = str(get_paste())
+    url = str(get_paste()).strip()
     if url.startswith("http"):
         text = req.get(url, headers={"user-agent": ""}).text
         total_time_secs = sum(
@@ -35,13 +35,13 @@ try:
             total_time = f"{round(total_time_secs / 3600, 1)} hours"
         else:
             total_time = f"{round(total_time_secs / 60, 1)} mins"
-        downloads_path = Path(r"D:/downloads") / f"{Path(url).stem}.mp4"
+        downloads_path = Path(r"D:/downloads") / f"{Path(url).stem}-{time.strftime('%Y%m%d%H%M%S')}.mp4"
         # cmd = ["ffmpeg.exe", "-i", url, downloads_path.resolve()]
         # -socks5-proxy socks5://ip:port
         # -http_proxy http://127.0.0.1:1080
         # proxy = " -http_proxy http://127.0.0.1:1080"
         proxy = ""
-        cmd = f'ffmpeg.exe {proxy} -c copy -y -i "{url}" {downloads_path.resolve()}'
+        cmd = f'ffmpeg.exe {proxy} -y -i "{url}" {downloads_path.resolve()}'
         print(f"[{total_time}]", "download start", downloads_path.resolve(), flush=True)
         p = subprocess.Popen(
             cmd,
@@ -77,7 +77,7 @@ finally:
         if ok:
             new_name = input("new name:")
             if new_name:
-                downloads_path.rename(downloads_path.with_name(new_name))
+                downloads_path.rename(downloads_path.with_stem(new_name))
             print("download finished", downloads_path.resolve())
             os.startfile("D:/downloads")
         else:
