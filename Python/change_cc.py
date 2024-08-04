@@ -31,7 +31,7 @@ def beep(frequency=800, duration=300, n=3):
         kernel32.Beep(frequency, duration)
 
 
-@threads(8)
+@threads(5)
 def test_once(url):
     if running:
         return req.get(url, params={"url": test_url, "timeout": timeout}).json()
@@ -39,7 +39,7 @@ def test_once(url):
         return {}
 
 
-@threads(20)
+@threads(15)
 def test_node_delay(proxy_name):
     result = []
     url = api_url + f"/proxies/{quote(proxy_name)}/delay"
@@ -68,6 +68,7 @@ def check_current_proxy(proxy):
 timeout = 3000
 tries = 3
 test_url = "http://www.gstatic.com/generate_204"
+print(ttime(), "start")
 while 1:
     running = True
     try:
@@ -83,13 +84,12 @@ while 1:
             raise ValueError("no port found in config")
         proxy = f"http://127.0.0.1:{m[1]}"
         # try current proxy
-        if check_current_proxy(proxy=proxy):
-            print(ttime(), "proxy is ok", end=" ", flush=True)
+        while check_current_proxy(proxy=proxy):
             for _ in range(30):
                 time.sleep(1)
                 print(30 - _, end=" ", flush=True)
-            print(flush=True)
             continue
+        print(flush=True)
         print(ttime(), "try to switch proxy")
         m = re.search(r"s{1}e{1}c{1}r{1}e{1}t{1}:.*", config_text)
         if m:
