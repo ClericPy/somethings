@@ -2,6 +2,7 @@ import mimetypes
 import os
 import shutil
 import time
+import random
 from pathlib import Path
 from queue import Queue
 from threading import Thread, Timer
@@ -151,8 +152,9 @@ if dir_path_str.is_dir():
             to_deletes.append(path)
     # print(to_deletes, flush=True)
     if to_deletes:
+        random.shuffle(to_deletes)
         # to_deletes.sort(key=lambda i: i.stat().st_ctime)
-        to_deletes.sort(key=lambda i: i.stat().st_size, reverse=True)
+        # to_deletes.sort(key=lambda i: i.stat().st_size, reverse=True)
         # to_deletes.sort(key=lambda i: str(i), reverse=True)
         set_proc()
         try:

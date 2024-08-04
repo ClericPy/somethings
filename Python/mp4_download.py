@@ -36,6 +36,9 @@ try:
         else:
             total_time = f"{round(total_time_secs / 60, 1)} mins"
         downloads_path = Path(r"D:/downloads") / f"{Path(url).stem}-{time.strftime('%Y%m%d%H%M%S')}.mp4"
+        new_name = input("new name:")
+        if new_name:
+            downloads_path = downloads_path.with_stem(new_name)
         # cmd = ["ffmpeg.exe", "-i", url, downloads_path.resolve()]
         # -socks5-proxy socks5://ip:port
         # -http_proxy http://127.0.0.1:1080
@@ -75,9 +78,6 @@ except Exception:
 finally:
     if downloads_path and downloads_path.is_file():
         if ok:
-            new_name = input("new name:")
-            if new_name:
-                downloads_path.rename(downloads_path.with_stem(new_name))
             print("download finished", downloads_path.resolve())
             os.startfile("D:/downloads")
         else:
