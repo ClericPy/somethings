@@ -1,12 +1,19 @@
 import os
+import random
 import re
 import traceback
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from urllib.parse import quote
 
-from morebuiltins.request import req
-from morebuiltins.utils import xor_encode_decode
+try:
+    from morebuiltins.request import req
+    from morebuiltins.utils import xor_encode_decode
+except ImportError:
+    import pip
+    pip.main(["install", "morebuiltins"])
+    from morebuiltins.request import req
+    from morebuiltins.utils import xor_encode_decode
 
 
 # 测试节点延迟
@@ -38,27 +45,32 @@ try:
         raise ValueError("需要重启使接口生效")
     m = re.search(r"external-controller: *(.+)", config_text)
     if not m:
-        raise ValueError("external-controller not found %s" % config_text)
+        raise ValueError("serv addr not found %s" % config_text)
     api_url = "http://" + m[1]
     timeout = 1500
-    tries = 2
+    tries = 3
     test_url = "http://www.gstatic.com/generate_204"
     response = req.get(api_url + "/proxies")
     current_config = response.json()
     proxies = current_config["proxies"]
     pool = ThreadPoolExecutor(5)
     nodes = {
-        i["name"] for i in proxies.values() if i["type"] not in {"Selector", "Direct"}
+        i["name"]
+        for i in proxies.values()
+        if i["type"] not in {"Selector", "Direct", "Reject"}
     }
     names = []
     for node in proxies["GLOBAL"]["all"]:
         if node in nodes:
             names.append(node)
+    random.shuffle(names)
     tasks = [pool.submit(test_node_delay, name) for name in names]
+    results = []
     for task in as_completed(tasks):
         name, delay = task.result()
         print(f"{name}: {delay} ms", flush=True)
         if delay < timeout:
+            results.append((name, delay))
             payload = {"name": name}
             response = req.put(api_url + "/proxies/GLOBAL", json=payload)
             print(
@@ -67,8 +79,8 @@ try:
             )
             break
     else:
-        print("No nodes available", flush=True)
-    os.system("timeout 5")
+        raise ValueError("No nodes available")
+    os.system("timeout 3")
 except Exception:
     traceback.print_exc()
 
