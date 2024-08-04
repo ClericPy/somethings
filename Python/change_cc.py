@@ -1,87 +1,143 @@
+import ctypes
 import os
 import random
 import re
+import time
 import traceback
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from urllib.parse import quote
 
 try:
+    from morebuiltins import __version__
+
+    if __version__ < "1.0.9":
+        raise ImportError
+    from morebuiltins.functools import threads
     from morebuiltins.request import req
-    from morebuiltins.utils import xor_encode_decode
+    from morebuiltins.utils import ttime, xor_encode_decode
 except ImportError:
     import pip
-    pip.main(["install", "morebuiltins"])
+
+    pip.main(["install", "morebuiltins>=1.0.9"])
+    from morebuiltins.functools import threads
     from morebuiltins.request import req
-    from morebuiltins.utils import xor_encode_decode
+    from morebuiltins.utils import ttime, xor_encode_decode
 
 
-# 测试节点延迟
-def test_node_delay(proxy_name):
-    for _ in range(tries):
-        response = req.get(
-            api_url + f"/proxies/{quote(proxy_name)}/delay",
-            params={"url": test_url, "timeout": timeout},
-        )
-        if "delay" not in response.json():
-            delay = 9999
-            break
-        else:
-            delay = response.json()["delay"]
-    return proxy_name, delay
+def beep(frequency=800, duration=300, n=3):
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    for _ in range(n):
+        kernel32.Beep(frequency, duration)
 
 
-try:
-    # api_url = "http://127.0.0.1:8872/"
-    # http://127.0.0.1:8872/proxies
-    sub_path = xor_encode_decode(
-        b"EQ\x05\x06U[TD\x0bYUA\x02D\t\x07ZU[\x0c\x1c\x13\t^^", b"k2jh323kh542jkjh432"
-    ).decode("utf-8")
-    conf_path = Path.home().joinpath(sub_path)
-    config_text = conf_path.read_text()
-    m = re.search(r"secret:.*", config_text)
-    if m:
-        conf_path.write_text(re.sub(r"secret: *(.*)", "", config_text))
-        raise ValueError("需要重启使接口生效")
-    m = re.search(r"external-controller: *(.+)", config_text)
-    if not m:
-        raise ValueError("serv addr not found %s" % config_text)
-    api_url = "http://" + m[1]
-    timeout = 1500
-    tries = 3
-    test_url = "http://www.gstatic.com/generate_204"
-    response = req.get(api_url + "/proxies")
-    current_config = response.json()
-    proxies = current_config["proxies"]
-    pool = ThreadPoolExecutor(5)
-    nodes = {
-        i["name"]
-        for i in proxies.values()
-        if i["type"] not in {"Selector", "Direct", "Reject"}
-    }
-    names = []
-    for node in proxies["GLOBAL"]["all"]:
-        if node in nodes:
-            names.append(node)
-    random.shuffle(names)
-    tasks = [pool.submit(test_node_delay, name) for name in names]
-    results = []
-    for task in as_completed(tasks):
-        name, delay = task.result()
-        print(f"{name}: {delay} ms", flush=True)
-        if delay < timeout:
-            results.append((name, delay))
-            payload = {"name": name}
-            response = req.put(api_url + "/proxies/GLOBAL", json=payload)
-            print(
-                f"Switched to node: {name} with delay: {delay}ms: {response.text}",
-                flush=True,
-            )
-            break
+@threads(8)
+def test_once(url):
+    if running:
+        return req.get(url, params={"url": test_url, "timeout": timeout}).json()
     else:
-        raise ValueError("No nodes available")
-    os.system("timeout 3")
-except Exception:
-    traceback.print_exc()
+        return {}
 
-    os.system("pause")
+
+@threads(20)
+def test_node_delay(proxy_name):
+    result = []
+    url = api_url + f"/proxies/{quote(proxy_name)}/delay"
+    tasks = [test_once(url) for _ in range(tries)]
+    for task in tasks:
+        delay = task.result().get("delay", timeout * 2)
+        result.append(delay)
+    return proxy_name, round(sum(result) / len(result))
+
+
+def check_current_proxy(proxy):
+    try:
+        r = req.get(
+            test_url, headers={"user-agent": "chrome"}, proxy=proxy, timeout=timeout
+        )
+        return r.ok
+    except Exception:
+        traceback.print_exc()
+        return False
+
+
+timeout = 3000
+tries = 3
+test_url = "http://www.gstatic.com/generate_204"
+while 1:
+    running = True
+    try:
+        # http://127.0.0.1:8872/proxies
+        sub_path = xor_encode_decode(
+            b"EQ\x05\x06U[TD\x0bYUA\x02D\t\x07ZU[\x0c\x1c\x13\t^^",
+            b"k2jh323kh542jkjh432",
+        ).decode("utf-8")
+        conf_path = Path.home().joinpath(sub_path)
+        config_text = conf_path.read_text()
+        m = re.search(r"m{1}i{1}x{1}e{1}d{1}-{1}p{1}o{1}r{1}t{1}: ?(\d+)", config_text)
+        if not m:
+            raise ValueError("no port found in config")
+        proxy = f"http://127.0.0.1:{m[1]}"
+        # try current proxy
+        if check_current_proxy(proxy=proxy):
+            print(ttime(), "proxy is ok", end=" ", flush=True)
+            for _ in range(30):
+                time.sleep(1)
+                print(30 - _, end=" ", flush=True)
+            print(flush=True)
+            continue
+        print(ttime(), "try to switch proxy")
+        m = re.search(r"s{1}e{1}c{1}r{1}e{1}t{1}:.*", config_text)
+        if m:
+            conf_path.write_text(
+                re.sub(r"s{1}e{1}c{1}r{1}e{1}t{1}: *(.*)", "", config_text)
+            )
+            raise ValueError("restart your app")
+        m = re.search(
+            r"e{1}x{1}t{1}e{1}r{1}n{1}a{1}l{1}-{1}c{1}o{1}n{1}t{1}r{1}o{1}l{1}l{1}e{1}r{1}: *(.+)",
+            config_text,
+        )
+        if not m:
+            raise ValueError("serv addr not found %s" % config_text)
+        api_url = "http://" + m[1]
+        response = req.get(api_url + "/proxies")
+        current_config = response.json()
+        proxies = current_config["proxies"]
+        nodes = {
+            i["name"]
+            for i in proxies.values()
+            if i["type"] not in {"Selector", "Direct", "Reject"}
+        }
+        names = []
+        for node in proxies["GLOBAL"]["all"]:
+            if node in nodes:
+                names.append(node)
+        random.shuffle(names)
+        pool = ThreadPoolExecutor(5)
+        tasks = [test_node_delay(name) for name in names]
+        results = []
+        for task in as_completed(tasks):
+            name, delay = task.result()
+            print(ttime(), f"{name}: {delay} ms", flush=True)
+            if delay < timeout:
+                results.append((name, delay))
+                payload = {"name": name}
+                response = req.put(api_url + "/proxies/GLOBAL", json=payload)
+                print(
+                    ttime(),
+                    f"Switched to node: {name} with delay: {delay}ms: {response.text}",
+                    flush=True,
+                )
+                break
+        else:
+            raise ValueError("No nodes available")
+    except KeyboardInterrupt:
+        print(ttime(), "bye", flush=True)
+        beep()
+        break
+    except Exception:
+        print(ttime(), traceback.format_exc(), flush=True)
+        beep()
+        os.system("pause")
+    finally:
+        running = False
