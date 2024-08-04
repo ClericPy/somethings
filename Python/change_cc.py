@@ -51,14 +51,18 @@ def test_node_delay(proxy_name):
 
 
 def check_current_proxy(proxy):
-    try:
-        r = req.get(
-            test_url, headers={"user-agent": "chrome"}, proxy=proxy, timeout=timeout
-        )
-        return r.ok
-    except Exception:
-        traceback.print_exc()
-        return False
+    ok = False
+    for _ in range(3):
+        try:
+            r = req.get(
+                test_url, headers={"user-agent": "chrome"}, proxy=proxy, timeout=timeout
+            )
+            ok = r.ok
+            if ok:
+                break
+        except Exception:
+            pass
+    return ok
 
 
 timeout = 3000
