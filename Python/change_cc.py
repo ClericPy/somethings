@@ -59,13 +59,16 @@ def check_current_proxy(proxy):
             )
             ok = r.ok
             if ok:
+                print("+", flush=True, end="")
                 break
+            else:
+                print("-", flush=True, end="")
         except Exception:
             pass
     return ok
 
 
-timeout = 3000
+timeout = 2000
 tries = 3
 test_url = "http://www.gstatic.com/generate_204"
 print(ttime(), "start")
@@ -85,12 +88,13 @@ while 1:
         proxy = f"http://127.0.0.1:{m[1]}"
         # try current proxy
         while check_current_proxy(proxy=proxy):
-            for _ in range(30):
+            n = 15
+            for _ in range(n):
                 time.sleep(1)
-                print(30 - _, end=" ", flush=True)
+                print(n - _, end=" ", flush=True)
             continue
         print(flush=True)
-        print(ttime(), "try to switch proxy")
+        print(ttime(), "try to switch proxy", flush=True)
         m = re.search(r"s{1}e{1}c{1}r{1}e{1}t{1}:.*", config_text)
         if m:
             conf_path.write_text(
@@ -132,6 +136,7 @@ while 1:
                     f"Switched to node: {name} with delay: {delay}ms: {response.text}",
                     flush=True,
                 )
+                Path(__file__).touch()
                 break
         else:
             raise ValueError("No nodes available")
