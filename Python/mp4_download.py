@@ -20,14 +20,21 @@ def beep():
 
 
 try:
+    url = str(get_paste()).strip()
     ok = False
     downloads_path = None
     code = os.system("ffmpeg -version")
     if code != 0:
         raise RuntimeError("ffmpeg not found!")
-    url = str(get_paste()).strip()
+    use_proxy = 0
+    if use_proxy:
+        proxy = " -http_proxy http://127.0.0.1:1080"
+        _proxy = "http://127.0.0.1:1080"
+    else:
+        proxy = ""
+        _proxy = None
     if url.startswith("http"):
-        text = req.get(url, headers={"user-agent": ""}).text
+        text = req.get(url, headers={"user-agent": ""}, proxy=_proxy).text
         total_time_secs = sum(
             [float(i) for i in re.findall(r"EXTINF:(\d+\.?\d*),", text)]
         )
@@ -35,17 +42,25 @@ try:
             total_time = f"{round(total_time_secs / 3600, 1)} hours"
         else:
             total_time = f"{round(total_time_secs / 60, 1)} mins"
-        downloads_path = Path(r"D:/downloads") / f"{Path(url).stem}-{time.strftime('%Y%m%d%H%M%S')}.mp4"
+        downloads_path = (
+            Path(r"D:/downloads")
+            / f"{Path(url).stem}-{time.strftime('%Y%m%d%H%M%S')}.mp4"
+        )
         new_name = input("new name:")
         if new_name:
             downloads_path = downloads_path.with_stem(new_name)
         # cmd = ["ffmpeg.exe", "-i", url, downloads_path.resolve()]
         # -socks5-proxy socks5://ip:port
         # -http_proxy http://127.0.0.1:1080
-        # proxy = " -http_proxy http://127.0.0.1:1080"
-        proxy = ""
-        cmd = f'ffmpeg.exe {proxy} -y -i "{url}" {downloads_path.resolve()}'
-        print(f"[{total_time}]", "download start", downloads_path.resolve(), flush=True)
+
+        cmd = f'ffmpeg.exe {proxy} -y -i "{url}" "{downloads_path.resolve().as_posix()}"'
+        print(
+            f"[{total_time}]",
+            "download start",
+            downloads_path.resolve(),
+            cmd,
+            flush=True,
+        )
         p = subprocess.Popen(
             cmd,
             shell=True,
@@ -57,7 +72,7 @@ try:
             errors="replace",
         )
         perc = "    "
-        for line in p.stdout or []:
+        for index, line in enumerate(p.stdout or []):
             # time=00:00:26.09
             m = re.search(r"time=((\d+):(\d+):(\d+))", line)
             if m:
@@ -71,6 +86,8 @@ try:
                 )
             else:
                 done = "        "
+            if index % 10 == 0:
+                print(downloads_path.name)
             print(f"[{total_time}]", done, "|", perc, "|", line.rstrip(), flush=True)
         ok = True
 except Exception:
