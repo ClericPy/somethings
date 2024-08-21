@@ -31,15 +31,30 @@ def beep(frequency=800, duration=300, n=3):
         kernel32.Beep(frequency, duration)
 
 
-@threads(5)
-def test_once(url):
+@threads(10)
+def test_once(url, return_json=True, proxy=None):
+    r = None
     if running:
-        return req.get(url, params={"url": test_url, "timeout": timeout}).json()
+        try:
+            r = req.get(
+                url,
+                params={"url": test_url, "timeout": timeout},
+                headers={"user-agent": "chrome"},
+                proxy=proxy,
+                timeout=timeout,
+            )
+        except Exception:
+            pass
+    if return_json:
+        if r:
+            return r.json()
+        else:
+            return {}
     else:
-        return {}
+        return r.ok if r else False
 
 
-@threads(15)
+@threads(10)
 def test_node_delay(proxy_name):
     result = []
     url = api_url + f"/proxies/{quote(proxy_name)}/delay"
@@ -52,19 +67,14 @@ def test_node_delay(proxy_name):
 
 def check_current_proxy(proxy):
     ok = False
-    for _ in range(3):
-        try:
-            r = req.get(
-                test_url, headers={"user-agent": "chrome"}, proxy=proxy, timeout=timeout
-            )
-            ok = r.ok
-            if ok:
-                print("+", flush=True, end="")
-                break
-            else:
-                print("-", flush=True, end="")
-        except Exception:
-            pass
+    tasks = [test_once(test_url, return_json=False, proxy=proxy) for _ in range(2)]
+    for task in as_completed(tasks):
+        ok = task.result()
+        if ok:
+            print("+", flush=True, end="")
+            break
+        else:
+            print("-", flush=True, end="")
     return ok
 
 
@@ -147,6 +157,6 @@ while 1:
     except Exception:
         print(ttime(), traceback.format_exc(), flush=True)
         beep()
-        os.system("pause")
+        os.system("timeout 10")
     finally:
         running = False
