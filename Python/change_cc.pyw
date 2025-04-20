@@ -10,16 +10,16 @@ from urllib.parse import quote
 try:
     from morebuiltins import __version__
 
-    if __version__ < "1.0.9":
+    if __version__ < "1.3.0":
         raise ImportError
-    from morebuiltins.functools import threads
+    from morebuiltins.funcs import threads
     from morebuiltins.request import req
     from morebuiltins.utils import ttime, xor_encode_decode
 except ImportError:
     import pip
 
-    pip.main(["install", "morebuiltins>=1.0.9"])
-    from morebuiltins.functools import threads
+    pip.main(["install", "morebuiltins>=1.3.0"])
+    from morebuiltins.funcs import threads
     from morebuiltins.request import req
     from morebuiltins.utils import ttime, xor_encode_decode
 
