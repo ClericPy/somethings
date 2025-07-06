@@ -9,6 +9,7 @@ from time import time
 from tkinter import Tk
 from tkinter.messagebox import askyesno, showerror
 from typing import Dict, List
+from urllib.parse import quote
 
 top = Tk()
 dir_path_str = top.clipboard_get()
@@ -214,14 +215,14 @@ def run(dir_path: Path):
         HTML += f'<div class="article"><hr><h2 title="Click scoll to the top" id="{key_id}____{index}">{index}/{total}. {escape(h2_str)}</h2><hr>'
         HTML += "\n".join(
             [
-                f"""<div class="pic"><img class="lazy-load" src="data:image/gif;base64,R0lGODlhAQABAIAAAAUEBAAAACwAAAAAAQABAAACAkQBADs=" data-src="{src}" alt="" /><div class="path">({index}/{total}|{_idx}/{len(srcs)})|{src}</div></div>"""
+                f"""<div class="pic"><img class="lazy-load" src="data:image/gif;base64,R0lGODlhAQABAIAAAAUEBAAAACwAAAAAAQABAAACAkQBADs=" data-src="{quote(src)}" alt="" /><div class="path">({index}/{total}|{_idx}/{len(srcs)})|{src}</div></div>"""
                 for _idx, src in enumerate(srcs, 1)
             ]
         )
         HTML += "</div>"
     HTML += f'</div></body><style id="new_width"></style>{JS}</html>'
     # max path length issue
-    fp = dir_path / f"-{dir_path.name[:200-len(dir_path.as_posix())]}.html"
+    fp = dir_path / f"-{dir_path.name[: 200 - len(dir_path.as_posix())]}.html"
     with open(fp, "w", encoding="u8") as f:
         f.write(HTML)
     webbrowser.open(fp.as_posix())
