@@ -111,15 +111,21 @@ sub_path = xor_encode_decode(
 ).decode("utf-8")
 conf_path = Path.home().joinpath(sub_path)
 
-with open(conf_path.parent / "changecc.log", "w") as f_stdout:
+with open(conf_path.parent / "changecc.log", "w", encoding="utf-8") as f_stdout:
     sys.stdout = f_stdout
-    print(ttime(), "start")
+    start_time = ttime()
+    fresh_log_time = 0.0
     ext_api = ""
     while 1:
         running = True
         try:
             # http://127.0.0.1:8872/proxies
-
+            # remain logs for 1 hour
+            if time.time() - fresh_log_time > 60 * 60 * 1:
+                f_stdout.seek(0)
+                f_stdout.truncate(0)
+                fresh_log_time = time.time()
+                print(ttime(), "start", flush=True)
             config_text = conf_path.read_text()
             m = re.search(
                 r"m{1}i{1}x{1}e{1}d{1}-{1}p{1}o{1}r{1}t{1}: ?(\d+)", config_text
