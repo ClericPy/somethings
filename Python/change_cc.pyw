@@ -1,5 +1,4 @@
 import ctypes
-import random
 import re
 import time
 import traceback
@@ -30,6 +29,8 @@ def beep(frequency=800, duration=300, n=3):
         kernel32.Beep(frequency, duration)
 
 
+secret = "set-your-secret"
+
 @threads(10)
 def test_once(url, return_json=True, proxy=None):
     r = None
@@ -38,7 +39,10 @@ def test_once(url, return_json=True, proxy=None):
             r = req.get(
                 url,
                 params={"url": test_url, "timeout": timeout},
-                headers={"user-agent": "chrome"},
+                headers={
+                    "user-agent": "chrome",
+                    "Authorization": f"Bearer {secret}",
+                },
                 proxy=proxy,
                 timeout=timeout,
             )
@@ -56,7 +60,7 @@ def test_once(url, return_json=True, proxy=None):
 @threads(10)
 def test_node_delay(proxy_name):
     result = []
-    url = api_url + f"/proxies/{quote(proxy_name)}/delay"
+    url = ext_api + f"/proxies/{quote(proxy_name)}/delay"
     tasks = [test_once(url) for _ in range(tries)]
     for task in tasks:
         delay = task.result().get("delay", timeout * 2)
@@ -77,12 +81,31 @@ def check_current_proxy(proxy):
     return ok
 
 
+def ensure_ext_api(config_text):
+    m = re.search(
+        r"e{1}x{1}t{1}e{1}r{1}n{1}a{1}l{1}-{1}c{1}o{1}n{1}t{1}r{1}o{1}l{1}l{1}e{1}r{1}: *(.+)",
+        config_text,
+    )
+    if not m:
+        raise ValueError("serv addr not found %s" % config_text)
+    api = "http://" + m[1]
+    r = req.get(
+        api + "/proxies",
+        headers={"user-agent": "chrome", "Authorization": f"Bearer {secret}"},
+        timeout=timeout,
+    )
+    if "proxies" not in r.json():
+        raise ValueError(f"api not available: {api!r}, ensure your secret: {secret!r}")
+    return api
+
+
 timeout = 2000
 tries = 3
 # test_url = "http://www.gstatic.com/generate_204"
 test_url = "https://www.google.com/generate_204"
 
 print(ttime(), "start")
+ext_api = ""
 while 1:
     running = True
     try:
@@ -97,6 +120,7 @@ while 1:
         if not m:
             raise ValueError("no port found in config")
         proxy = f"http://127.0.0.1:{m[1]}"
+        ext_api = ensure_ext_api(config_text)
         # try current proxy
         while check_current_proxy(proxy=proxy):
             n = 15
@@ -106,20 +130,10 @@ while 1:
             continue
         print(flush=True)
         print(ttime(), "try to switch proxy", flush=True)
-        m = re.search(r"s{1}e{1}c{1}r{1}e{1}t{1}:.*", config_text)
-        if m:
-            conf_path.write_text(
-                re.sub(r"s{1}e{1}c{1}r{1}e{1}t{1}: *(.*)", "", config_text)
-            )
-            raise ValueError("restart your app")
-        m = re.search(
-            r"e{1}x{1}t{1}e{1}r{1}n{1}a{1}l{1}-{1}c{1}o{1}n{1}t{1}r{1}o{1}l{1}l{1}e{1}r{1}: *(.+)",
-            config_text,
+        response = req.get(
+            ext_api + "/proxies",
+            headers={"user-agent": "chrome", "Authorization": f"Bearer {secret}"},
         )
-        if not m:
-            raise ValueError("serv addr not found %s" % config_text)
-        api_url = "http://" + m[1]
-        response = req.get(api_url + "/proxies")
         current_config = response.json()
         proxies = current_config["proxies"]
         nodes = {
@@ -131,7 +145,7 @@ while 1:
         for node in proxies["GLOBAL"]["all"]:
             if node in nodes:
                 names.append(node)
-        random.shuffle(names)
+        names.sort(key=lambda i: "香港" in i, reverse=True)
         pool = ThreadPoolExecutor(5)
         tasks = [test_node_delay(name) for name in names]
         results = []
@@ -141,7 +155,14 @@ while 1:
             if delay < timeout:
                 results.append((name, delay))
                 payload = {"name": name}
-                response = req.put(api_url + "/proxies/GLOBAL", json=payload)
+                response = req.put(
+                    ext_api + "/proxies/GLOBAL",
+                    json=payload,
+                    headers={
+                        "user-agent": "chrome",
+                        "Authorization": f"Bearer {secret}",
+                    },
+                )
                 print(
                     ttime(),
                     f"Switched to node: {name} with delay: {delay}ms: {response.text}",
