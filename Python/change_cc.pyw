@@ -1,5 +1,6 @@
 import ctypes
 import re
+import sys
 import time
 import traceback
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -30,6 +31,7 @@ def beep(frequency=800, duration=300, n=3):
 
 
 secret = "set-your-secret"
+
 
 @threads(10)
 def test_once(url, return_json=True, proxy=None):
@@ -103,83 +105,88 @@ timeout = 2000
 tries = 3
 # test_url = "http://www.gstatic.com/generate_204"
 test_url = "https://www.google.com/generate_204"
+sub_path = xor_encode_decode(
+    b"EQ\x05\x06U[TD\x0bYUA\x02D\t\x07ZU[\x0c\x1c\x13\t^^",
+    b"k2jh323kh542jkjh432",
+).decode("utf-8")
+conf_path = Path.home().joinpath(sub_path)
 
-print(ttime(), "start")
-ext_api = ""
-while 1:
-    running = True
-    try:
-        # http://127.0.0.1:8872/proxies
-        sub_path = xor_encode_decode(
-            b"EQ\x05\x06U[TD\x0bYUA\x02D\t\x07ZU[\x0c\x1c\x13\t^^",
-            b"k2jh323kh542jkjh432",
-        ).decode("utf-8")
-        conf_path = Path.home().joinpath(sub_path)
-        config_text = conf_path.read_text()
-        m = re.search(r"m{1}i{1}x{1}e{1}d{1}-{1}p{1}o{1}r{1}t{1}: ?(\d+)", config_text)
-        if not m:
-            raise ValueError("no port found in config")
-        proxy = f"http://127.0.0.1:{m[1]}"
-        ext_api = ensure_ext_api(config_text)
-        # try current proxy
-        while check_current_proxy(proxy=proxy):
-            n = 15
-            for _ in range(n):
-                time.sleep(1)
-                print(n - _, end=" ", flush=True)
-            continue
-        print(flush=True)
-        print(ttime(), "try to switch proxy", flush=True)
-        response = req.get(
-            ext_api + "/proxies",
-            headers={"user-agent": "chrome", "Authorization": f"Bearer {secret}"},
-        )
-        current_config = response.json()
-        proxies = current_config["proxies"]
-        nodes = {
-            i["name"]
-            for i in proxies.values()
-            if i["type"] not in {"Selector", "Direct", "Reject"}
-        }
-        names = []
-        for node in proxies["GLOBAL"]["all"]:
-            if node in nodes:
-                names.append(node)
-        names.sort(key=lambda i: "香港" in i, reverse=True)
-        pool = ThreadPoolExecutor(5)
-        tasks = [test_node_delay(name) for name in names]
-        results = []
-        for task in as_completed(tasks):
-            name, delay = task.result()
-            print(ttime(), f"{name}: {delay} ms", flush=True)
-            if delay < timeout:
-                results.append((name, delay))
-                payload = {"name": name}
-                response = req.put(
-                    ext_api + "/proxies/GLOBAL",
-                    json=payload,
-                    headers={
-                        "user-agent": "chrome",
-                        "Authorization": f"Bearer {secret}",
-                    },
-                )
-                print(
-                    ttime(),
-                    f"Switched to node: {name} with delay: {delay}ms: {response.text}",
-                    flush=True,
-                )
-                Path(__file__).touch()
-                break
-        else:
-            raise ValueError("No nodes available")
-    except KeyboardInterrupt:
-        print(ttime(), "bye", flush=True)
-        beep()
-        break
-    except Exception:
-        print(ttime(), traceback.format_exc(), flush=True)
-        # beep()
-        # os.system("timeout 10")
-        time.sleep(15)
-    finally:
-        running = False
+with open(conf_path.parent / "changecc.log", "w") as f_stdout:
+    sys.stdout = f_stdout
+    print(ttime(), "start")
+    ext_api = ""
+    while 1:
+        running = True
+        try:
+            # http://127.0.0.1:8872/proxies
+
+            config_text = conf_path.read_text()
+            m = re.search(
+                r"m{1}i{1}x{1}e{1}d{1}-{1}p{1}o{1}r{1}t{1}: ?(\d+)", config_text
+            )
+            if not m:
+                raise ValueError("no port found in config")
+            proxy = f"http://127.0.0.1:{m[1]}"
+            ext_api = ensure_ext_api(config_text)
+            # try current proxy
+            while check_current_proxy(proxy=proxy):
+                n = 15
+                for _ in range(n):
+                    time.sleep(1)
+                    print(n - _, end=" ", flush=True)
+                continue
+            print(flush=True)
+            print(ttime(), "try to switch proxy", flush=True)
+            response = req.get(
+                ext_api + "/proxies",
+                headers={"user-agent": "chrome", "Authorization": f"Bearer {secret}"},
+            )
+            current_config = response.json()
+            proxies = current_config["proxies"]
+            nodes = {
+                i["name"]
+                for i in proxies.values()
+                if i["type"] not in {"Selector", "Direct", "Reject"}
+            }
+            names = []
+            for node in proxies["GLOBAL"]["all"]:
+                if node in nodes:
+                    names.append(node)
+            names.sort(key=lambda i: "香港" in i, reverse=True)
+            pool = ThreadPoolExecutor(5)
+            tasks = [test_node_delay(name) for name in names]
+            results = []
+            for task in as_completed(tasks):
+                name, delay = task.result()
+                print(ttime(), f"{name}: {delay} ms", flush=True)
+                if delay < timeout:
+                    results.append((name, delay))
+                    payload = {"name": name}
+                    response = req.put(
+                        ext_api + "/proxies/GLOBAL",
+                        json=payload,
+                        headers={
+                            "user-agent": "chrome",
+                            "Authorization": f"Bearer {secret}",
+                        },
+                    )
+                    print(
+                        ttime(),
+                        f"Switched to node: {name} with delay: {delay}ms: {response.text}",
+                        flush=True,
+                    )
+                    Path(__file__).touch()
+                    break
+            else:
+                raise ValueError("No nodes available")
+        except KeyboardInterrupt:
+            print(ttime(), "bye", flush=True)
+            beep()
+            break
+        except Exception:
+            print(ttime(), traceback.format_exc(), flush=True)
+            # beep()
+            # os.system("timeout 10")
+            time.sleep(15)
+        finally:
+            running = False
