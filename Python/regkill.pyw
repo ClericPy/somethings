@@ -14,12 +14,12 @@ class ThreadController:
     cache = ""
 
 
-def get_tail(timeout=3):
+def get_tail(timeout=5):
     start = time.time()
     result = ""
     while time.time() - start < timeout:
         try:
-            result = ThreadController.current_regex.get(timeout=1).strip()
+            result = ThreadController.current_regex.get(timeout=0.8).strip()
         except Empty:
             if result:
                 break
@@ -41,13 +41,20 @@ def find_procs():
         ThreadController.last_regex = current
         status.update(value=f"正在搜索: {current!r}")
         items = []
-        for i in psutil.process_iter(["pid", "name", "cmdline"]):
-            name = i.info["name"] or ""
-            cmd = " ".join(i.info["cmdline"] or "")
-            line = f"{i.pid:<8} | {name:<18} | {cmd}"
+        for proc in psutil.process_iter(["pid", "name", "cmdline"]):
+            # print(proc.info, flush=True)
+            name = proc.info["name"] or ""
+            mem = round(proc.memory_info().rss / 1024 / 1024, 1)  # Convert to MB
+            cmd = " ".join(proc.info["cmdline"] or "")
+            line = f"{proc.pid:<8} | {mem:>8}MB | {name:<20} | {cmd}"
             if re.search(current, line, flags=re.IGNORECASE):
                 items.append(line)
-        items.sort(key=lambda x: (str(x.split(" | ", 1)[1]), int(x.split(" | ", 1)[0])))
+        items.sort(
+            key=lambda x: (
+                x.split(" | ", 3)[2],
+                -float(x.split(" | ", 3)[1].strip(" MB")),
+            )
+        )
         cache = "\n".join(items)
         if cache != ThreadController.cache:
             ThreadController.cache = cache
@@ -100,11 +107,11 @@ while True:
             # 两次点击时候是同一个选中的
             sel = values["output"][0]
             # print("选中:", sel, flush=True)
-            pid, name = sel.split(" | ", 2)[:2]
+            pid, mem, name = sel.split(" | ", 3)[:3]
             # 默认选中 yes
             yes = sg.popup_yes_no(
                 "是否要杀死该进程？",
-                f"{pid.strip()} - {name}",
+                f"{pid.strip()} | {mem} | {name}",
                 title="提示",
                 keep_on_top=True,
             )
