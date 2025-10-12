@@ -1,4 +1,3 @@
-
 ## Background
 
 Store some scripts or snippets written by myself. Some GUI apps will build windows exe files.
@@ -55,9 +54,13 @@ Store some scripts or snippets written by myself. Some GUI apps will build windo
 
       > https://github.com/ClericPy/nuitka_simple_gui
 
-   7. proxy_speed (GUI, exe, pyw)
-
-      > I don't want to talk about this
+   7. win32_dir_api.py
+      1. Read a directory path from the clipboard, start a simple HTTP server, and open that directory in the browser.
+      2. [win32_dir_api.exe](https://github.com/ClericPy/somethings/releases/tag/0.1)
+         1. copy a directory path to clipboard
+         2. run win32_dir_api.exe
+         3. wait for the browser open the file list
+         4. the cache dir will be created in the same dir as exe file, and removed when exit the program
 
 2. **Javascript**
    1. tampermonkey (Chrome -> Tampermonkey -> Utilities -> Install from URL)
