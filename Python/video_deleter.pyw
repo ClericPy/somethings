@@ -8,7 +8,7 @@ from queue import Queue
 from threading import Thread, Timer
 from tkinter import Button, Label, StringVar, Tk
 
-output_dir = Path(r"F:\aaaa\target")
+output_dir = Path(r"C:\aaaa\target")
 moving = 0
 output_q = Queue()
 
