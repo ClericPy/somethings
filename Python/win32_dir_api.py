@@ -1,7 +1,13 @@
 import os
 import socket
+import sys
 import webbrowser
-from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer, test
+from http.server import (
+    BaseHTTPRequestHandler,
+    SimpleHTTPRequestHandler,
+    ThreadingHTTPServer,
+    _get_best_family,
+)
 from pathlib import Path
 from threading import Timer
 
@@ -84,6 +90,21 @@ class DownloadHTTPRequestHandler(SimpleHTTPRequestHandler):
             )
         super().end_headers()
 
+    def send_header(self, keyword, value):
+        """Send a MIME header to the headers buffer."""
+        if self.request_version != "HTTP/0.9":
+            if not hasattr(self, "_headers_buffer"):
+                self._headers_buffer = []
+            self._headers_buffer.append(
+                ("%s: %s\r\n" % (keyword, value)).encode("utf-8", "strict")
+            )
+
+        if keyword.lower() == "connection":
+            if value.lower() == "close":
+                self.close_connection = True
+            elif value.lower() == "keep-alive":
+                self.close_connection = False
+
 
 def get_free_port(ip):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -118,6 +139,31 @@ def find_ip():
         return ips
 
 
+def test_server(
+    HandlerClass=BaseHTTPRequestHandler,
+    ServerClass=ThreadingHTTPServer,
+    protocol="HTTP/1.0",
+    port=8000,
+    bind=None,
+):
+    """Test the HTTP request handler class.
+
+    This runs an HTTP server on port 8000 (or the port argument).
+
+    """
+    ServerClass.address_family, addr = _get_best_family(bind, port)
+    HandlerClass.protocol_version = protocol
+    with ServerClass(addr, HandlerClass) as httpd:
+        host, port = httpd.socket.getsockname()[:2]
+        url_host = f"[{host}]" if ":" in host else host
+        print(f"Serving HTTP on {host} port {port} (http://{url_host}:{port}/) ...")
+        try:
+            httpd.serve_forever()
+        except KeyboardInterrupt:
+            print("\nKeyboard interrupt received, exiting.")
+            sys.exit(0)
+
+
 def main():
     path = Path(get_clipboard_text())
     path = path if path.is_dir() else path.parent
@@ -132,7 +178,7 @@ def main():
     print(url, flush=True)
     os.chdir(path)
     Timer(0.5, webbrowser.open, args=(url,)).start()
-    test(DownloadHTTPRequestHandler, bind=lan_ip, port=port)
+    test_server(DownloadHTTPRequestHandler, bind=lan_ip, port=port)
 
 
 if __name__ == "__main__":
