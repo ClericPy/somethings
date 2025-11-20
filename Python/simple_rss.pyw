@@ -113,7 +113,7 @@ def update_feeds():
                         "title": entry.get("title", "No Title"),
                         "link": entry.get("link", ""),
                         "summary": summary,
-                        "published": dt.isoformat(),
+                        "published": dt.strftime("%Y-%m-%d %H:%M:%S"),
                         "timestamp": dt.timestamp(),
                         "feed_title": feed_title,
                         "is_read": False,
@@ -198,9 +198,28 @@ def update_tray_icon():
 # --- Web Server ---
 
 
+def set_readed(now_ts):
+    keys = [k for k in cache.iterkeys() if k.startswith("entry:")]
+    changed = False
+    for key in keys:
+        try:
+            entry = cache[key]
+            if not entry["is_read"] and entry["timestamp"] <= now_ts:
+                entry["is_read"] = True
+                cache[key] = entry
+                changed = True
+        except Exception:
+            pass
+    if changed:
+        update_unread_count()
+        update_tray_icon()
+
+
 class RSSRequestHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path == "/":
+            # Auto mark unread entries as read if published before now
+            threading.Timer(10, set_readed, args=(time.time(),)).start()
             self.send_response(200)
             self.send_header("Content-type", "text/html; charset=utf-8")
             self.end_headers()
@@ -262,6 +281,7 @@ class RSSRequestHandler(BaseHTTPRequestHandler):
         entries_html = ""
         for e in entries:
             status_class = "read" if e["is_read"] else "unread"
+            check_mark = '<span class="checkmark">√</span>' if e["is_read"] else ""
             # Simple summary truncation
             summary = (
                 e["summary"][:300] + "..." if len(e["summary"]) > 300 else e["summary"]
@@ -272,6 +292,7 @@ class RSSRequestHandler(BaseHTTPRequestHandler):
             entries_html += f"""
             <div class="entry {status_class}" id="{e["key"]}">
                 <div class="entry-header">
+                    {check_mark}
                     <span class="feed-title">{e["feed_title"]}</span>
                     <span class="date">{e["published"]}</span>
                 </div>
@@ -305,6 +326,7 @@ class RSSRequestHandler(BaseHTTPRequestHandler):
         button {{ cursor: pointer; padding: 5px 10px; background: #eee; border: none; border-radius: 4px; }}
         button:hover {{ background: #ddd; }}
         input {{ padding: 5px; width: 70%; }}
+        .checkmark {{ color: #34a853; margin-left: 8px; font-weight: bold; }}
     </style>
     <script>
         function api(endpoint, data) {{
