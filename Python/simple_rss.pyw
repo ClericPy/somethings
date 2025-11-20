@@ -62,7 +62,7 @@ def get_config():
         config["port"] = port
         updated = True
     if "check_interval" not in config:
-        config["check_interval"] = 60
+        config["check_interval"] = 120
         updated = True
     if updated:
         cache["config:settings"] = config
@@ -391,6 +391,17 @@ class RSSRequestHandler(BaseHTTPRequestHandler):
                 location.reload();
             }});
         }}
+        function toggleFeeds() {{
+            const list = document.getElementById('feedList');
+            const btn = document.getElementById('toggleFeedsBtn');
+            if (list.style.display === 'none') {{
+                list.style.display = 'block';
+                btn.innerText = 'Hide List';
+            }} else {{
+                list.style.display = 'none';
+                btn.innerText = 'Show List';
+            }}
+        }}
         function addFeed() {{
             const url = document.getElementById('urlInput').value;
             if(url) api('add_feed', {{url: url}});
@@ -417,11 +428,11 @@ class RSSRequestHandler(BaseHTTPRequestHandler):
 <body>
     {settings_html}
     <div class="control-panel">
-        <h2>Feeds</h2>
+        <h2>{len(feeds)} Feeds<button id="toggleFeedsBtn" onclick="toggleFeeds()" style="font-size: 0.6em; vertical-align: middle;">Show List</button></h2>
         <input type="text" id="urlInput" placeholder="RSS URL">
         <button onclick="addFeed()">Add</button>
         <button onclick="refresh()">Check Now</button>
-        <div style="margin-top: 10px;">
+        <div id="feedList" style="margin-top: 10px; display: none;">
             {feed_list_html}
         </div>
     </div>
@@ -449,7 +460,7 @@ def background_worker():
         update_feeds()
         # Reload config to get latest interval
         cfg = get_config()
-        interval = cfg.get("check_interval", 60)
+        interval = cfg.get("check_interval", 120)
         time.sleep(interval)
 
 
