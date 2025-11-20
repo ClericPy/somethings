@@ -48,14 +48,7 @@ except Exception as e:
     )
     sys.exit(1)
 # ensure nuitka build
-import ctypes
-import queue
-import sqlite3
-import urllib.error
-import xml.sax
-from ctypes import wintypes
-
-from six.moves import queue
+# --include-module=ctypes --include-module=queue --include-module=sqlite3 --include-module=urllib.error --include-module=xml.sax --include-module=ctypes.wintypes
 
 sys.stdout = open(os.devnull, "w")
 sys.stderr = open(os.devnull, "w")
