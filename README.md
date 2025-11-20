@@ -62,6 +62,10 @@ Store some scripts or snippets written by myself. Some GUI apps will build windo
          3. wait for the browser open the file list
          4. the cache dir will be created in the same dir as exe file, and removed when exit the program
 
+    8. simple_rss.pyw
+       1. A simple RSS feed checker with tray & web UI.
+       2. [simple_rss.exe]
+
 2. **Javascript**
    1. tampermonkey (Chrome -> Tampermonkey -> Utilities -> Install from URL)
 

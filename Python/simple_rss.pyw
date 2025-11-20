@@ -25,29 +25,35 @@ import socket
 import sys
 import threading
 import time
+import traceback
 import webbrowser
 from datetime import datetime, timedelta
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from pathlib import Path
 
+CACHE_DIR = Path.home() / ".simple_rss_cache"
+CACHE_DIR.mkdir(exist_ok=True, parents=True)
+ERROR_FILE = CACHE_DIR / "simple_rss_error.log"
 # Check dependencies
 try:
     import diskcache
     import feedparser
     import pystray
     from PIL import Image, ImageDraw, ImageFont
-except ImportError:
-    time.sleep(5)
+except Exception as e:
+    ERROR_FILE.write_text(
+        f"{time.strftime('%Y-%m-%d %H:%M:%S')} Application error: {e!r}\n{traceback.format_exc()}",
+        encoding="utf-8",
+    )
     sys.exit(1)
 
 sys.stdout = open(os.devnull, "w")
 sys.stderr = open(os.devnull, "w")
 
-# Configuration
-CACHE_DIR = os.path.join(os.path.expanduser("~"), ".simple_rss_cache")
 RETENTION_DAYS = 7
 
 # Initialize Cache
-cache = diskcache.Cache(CACHE_DIR)
+cache = diskcache.Cache(CACHE_DIR.as_posix())
 
 
 def get_config():
@@ -497,4 +503,10 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        ERROR_FILE.write_text(
+            f"{time.strftime('%Y-%m-%d %H:%M:%S')} Application error: {e!r}\n{traceback.format_exc()}",
+            encoding="utf-8",
+        )
