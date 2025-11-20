@@ -21,6 +21,7 @@ import hashlib
 import json
 import logging
 import os
+import socket
 import sys
 import threading
 import time
@@ -43,12 +44,35 @@ sys.stderr = open(os.devnull, "w")
 
 # Configuration
 CACHE_DIR = os.path.join(os.path.expanduser("~"), ".simple_rss_cache")
-PORT = 18888
-CHECK_INTERVAL = 60  # 1 minute
 RETENTION_DAYS = 7
 
 # Initialize Cache
 cache = diskcache.Cache(CACHE_DIR)
+
+
+def get_config():
+    config = cache.get("config:settings", {})
+    updated = False
+    if "port" not in config:
+        # Find free port
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.bind(("localhost", 0))
+        port = sock.getsockname()[1]
+        sock.close()
+        config["port"] = port
+        updated = True
+    if "check_interval" not in config:
+        config["check_interval"] = 60
+        updated = True
+    if updated:
+        cache["config:settings"] = config
+    return config
+
+
+# Load runtime configuration
+current_config = get_config()
+PORT = current_config["port"]
+CHECK_INTERVAL = current_config["check_interval"]
 
 # Global State
 state = {"unread_count": 0, "icon": None, "running": True}
@@ -256,6 +280,16 @@ class RSSRequestHandler(BaseHTTPRequestHandler):
             update_tray_icon()
         elif self.path == "/api/refresh":
             threading.Thread(target=update_feeds).start()
+        elif self.path == "/api/save_settings":
+            try:
+                new_port = int(data.get("port"))
+                new_interval = int(data.get("interval"))
+                config = cache.get("config:settings", {})
+                config["port"] = new_port
+                config["check_interval"] = new_interval
+                cache["config:settings"] = config
+            except ValueError:
+                pass
 
         self.send_response(200)
         self.end_headers()
@@ -263,6 +297,10 @@ class RSSRequestHandler(BaseHTTPRequestHandler):
 
     def generate_html(self):
         feeds = get_feeds()
+        config = get_config()
+        current_port = config.get("port", PORT)
+        current_interval = config.get("check_interval", CHECK_INTERVAL)
+
         entries = []
         for key in cache.iterkeys():
             if key.startswith("entry:"):
@@ -277,6 +315,18 @@ class RSSRequestHandler(BaseHTTPRequestHandler):
                 for url in feeds
             ]
         )
+
+        settings_html = f"""
+        <div class="control-panel">
+            <h2>Settings</h2>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <label>Port: <input type="number" id="portInput" value="{current_port}" style="width: 80px;"></label>
+                <label>Interval (s): <input type="number" id="intervalInput" value="{current_interval}" style="width: 80px;"></label>
+                <button onclick="saveSettings()">Save</button>
+            </div>
+            <small style="color: #666;">Note: Changing port requires application restart.</small>
+        </div>
+        """
 
         entries_html = ""
         for e in entries:
@@ -334,11 +384,21 @@ class RSSRequestHandler(BaseHTTPRequestHandler):
                 method: 'POST',
                 headers: {{'Content-Type': 'application/json'}},
                 body: JSON.stringify(data)
-            }}).then(() => location.reload());
+            }}).then(() => {{
+                if (endpoint === 'save_settings') {{
+                    alert('Settings saved. If port changed, please restart application.');
+                }}
+                location.reload();
+            }});
         }}
         function addFeed() {{
             const url = document.getElementById('urlInput').value;
             if(url) api('add_feed', {{url: url}});
+        }}
+        function saveSettings() {{
+            const port = document.getElementById('portInput').value;
+            const interval = document.getElementById('intervalInput').value;
+            api('save_settings', {{port: port, interval: interval}});
         }}
         function deleteFeed(url) {{
             if(confirm('Delete ' + url + '?')) api('delete_feed', {{url: url}});
@@ -355,6 +415,7 @@ class RSSRequestHandler(BaseHTTPRequestHandler):
     </script>
 </head>
 <body>
+    {settings_html}
     <div class="control-panel">
         <h2>Feeds</h2>
         <input type="text" id="urlInput" placeholder="RSS URL">
@@ -386,7 +447,10 @@ def run_server():
 def background_worker():
     while state["running"]:
         update_feeds()
-        time.sleep(CHECK_INTERVAL)
+        # Reload config to get latest interval
+        cfg = get_config()
+        interval = cfg.get("check_interval", 60)
+        time.sleep(interval)
 
 
 def on_tray_action(icon, item):
