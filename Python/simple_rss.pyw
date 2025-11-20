@@ -34,6 +34,7 @@ from pathlib import Path
 CACHE_DIR = Path.home() / ".simple_rss_cache"
 CACHE_DIR.mkdir(exist_ok=True, parents=True)
 ERROR_FILE = CACHE_DIR / "simple_rss_error.log"
+ERROR_FILE.unlink(missing_ok=True)
 # Check dependencies
 try:
     import diskcache
@@ -46,6 +47,15 @@ except Exception as e:
         encoding="utf-8",
     )
     sys.exit(1)
+# ensure nuitka build
+import ctypes
+import queue
+import sqlite3
+import urllib.error
+import xml.sax
+from ctypes import wintypes
+
+from six.moves import queue
 
 sys.stdout = open(os.devnull, "w")
 sys.stderr = open(os.devnull, "w")
