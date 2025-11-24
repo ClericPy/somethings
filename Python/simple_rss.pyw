@@ -191,7 +191,7 @@ def create_image(count):
     # Generate an icon with the unread count
     width = 64
     height = 64
-    color = (66, 133, 244) if count > 0 else (128, 128, 128)
+    color = (255, 0, 0) if count > 0 else (128, 128, 128)
 
     image = Image.new("RGBA", (width, height), (0, 0, 0, 0))
     dc = ImageDraw.Draw(image)
@@ -315,8 +315,39 @@ class RSSRequestHandler(BaseHTTPRequestHandler):
             if key.startswith("entry:"):
                 entries.append(cache[key])
 
-        # Sort: Unread first, then by date desc
-        entries.sort(key=lambda x: (x["is_read"], -x["timestamp"]))
+        # Sort logic:
+        # 1. Unread entries
+        #    - Group by feed source
+        #    - Sort groups by count (ascending)
+        #    - Sort within group by time (descending)
+        # 2. Read entries
+        #    - Sort by time (descending)
+        
+        unread_entries = [e for e in entries if not e["is_read"]]
+        read_entries = [e for e in entries if e["is_read"]]
+
+        # Group unread
+        unread_by_feed = {}
+        for e in unread_entries:
+            ft = e.get("feed_title", "Unknown")
+            if ft not in unread_by_feed:
+                unread_by_feed[ft] = []
+            unread_by_feed[ft].append(e)
+        
+        # Sort feeds by count
+        sorted_feeds = sorted(unread_by_feed.keys(), key=lambda k: len(unread_by_feed[k]))
+        
+        sorted_unread = []
+        for ft in sorted_feeds:
+            # Sort within feed by time desc
+            group = unread_by_feed[ft]
+            group.sort(key=lambda x: x["timestamp"], reverse=True)
+            sorted_unread.extend(group)
+            
+        # Sort read by time desc
+        read_entries.sort(key=lambda x: x["timestamp"], reverse=True)
+        
+        entries = sorted_unread + read_entries
 
         feed_list_html = "".join(
             [
