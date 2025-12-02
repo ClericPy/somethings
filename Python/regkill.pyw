@@ -1,3 +1,5 @@
+import ctypes
+import os
 import re
 import time
 from queue import Empty, Queue
@@ -5,6 +7,8 @@ from threading import Thread
 
 import FreeSimpleGUI as sg
 import psutil
+
+is_win = os.name == "nt"
 
 
 class ThreadController:
@@ -14,17 +18,33 @@ class ThreadController:
     cache = ""
 
 
-def get_tail(timeout=5):
+def get_tail(timeout=3):
     start = time.time()
     result = ""
     while time.time() - start < timeout:
         try:
-            result = ThreadController.current_regex.get(timeout=0.8).strip()
+            result = ThreadController.current_regex.get(timeout=1).strip()
         except Empty:
             if result:
                 break
             continue
     return result
+
+
+def choose_yes_no(msg: str):
+    if is_win:
+        # 自动选中 Yes，用 ctypes 调用 Windows API 弹窗，支持按 esc 取消
+        MB_YESNO = 0x04
+        MB_DEFBUTTON1 = 0x00
+        MB_TOPMOST = 0x00040000
+        IDYES = 6
+        result = ctypes.windll.user32.MessageBoxW(
+            0, msg, "确认", MB_YESNO | MB_DEFBUTTON1 | MB_TOPMOST
+        )
+        if result == IDYES:
+            return "Yes"
+    else:
+        return sg.popup_yes_no(msg, title="确认", keep_on_top=True)
 
 
 def find_procs():
@@ -42,19 +62,13 @@ def find_procs():
         status.update(value=f"正在搜索: {current!r}")
         items = []
         for proc in psutil.process_iter(["pid", "name", "cmdline"]):
-            # print(proc.info, flush=True)
             name = proc.info["name"] or ""
             mem = round(proc.memory_info().rss / 1024 / 1024, 1)  # Convert to MB
             cmd = " ".join(proc.info["cmdline"] or "")
             line = f"{proc.pid:<8} | {mem:>8}MB | {name:<20} | {cmd}"
             if re.search(current, line, flags=re.IGNORECASE):
                 items.append(line)
-        items.sort(
-            key=lambda x: (
-                x.split(" | ", 3)[2],
-                -float(x.split(" | ", 3)[1].strip(" MB")),
-            )
-        )
+        items.sort(key=lambda x: (str(x.split(" | ", 2)[2]), int(x.split(" | ", 1)[0])))
         cache = "\n".join(items)
         if cache != ThreadController.cache:
             ThreadController.cache = cache
@@ -109,12 +123,7 @@ while True:
             # print("选中:", sel, flush=True)
             pid, mem, name = sel.split(" | ", 3)[:3]
             # 默认选中 yes
-            yes = sg.popup_yes_no(
-                "是否要杀死该进程？",
-                f"{pid.strip()} | {mem} | {name}",
-                title="提示",
-                keep_on_top=True,
-            )
+            yes = choose_yes_no(f"终止进程 {pid} ({name.strip()})？")
             print(yes, sel, flush=True)
             pid = int(sel.split(" | ", 1)[0])
             if yes == "Yes":
