@@ -249,10 +249,14 @@ def set_readed(now_ts):
 
 
 class RSSRequestHandler(BaseHTTPRequestHandler):
+    def log_message(self, format, *args):
+        # Disable logging to avoid issues with closed stdout
+        pass
+
     def do_GET(self):
         if self.path == "/":
             # Auto mark unread entries as read if published before now
-            threading.Timer(10, set_readed, args=(time.time(),)).start()
+            threading.Timer(60, set_readed, args=(time.time(),)).start()
             self.send_response(200)
             self.send_header("Content-type", "text/html; charset=utf-8")
             self.end_headers()
@@ -512,7 +516,7 @@ def on_tray_action(icon, item):
     elif str(item) == "Exit":
         state["running"] = False
         icon.stop()
-        os._exit(0)
+        # No need for os._exit(0) here as the main thread will finish
 
 
 def main():
