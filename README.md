@@ -66,6 +66,21 @@ Store some scripts or snippets written by myself. Some GUI apps will build windo
        1. A simple RSS feed checker with tray & web UI.
        2. [simple_rss.exe]
 
+    9. audio_switch.pyw (GUI, py, archived)
+       1. Windows audio output device switcher with dark-themed GUI.
+       2. Uses PowerShell AudioDeviceCmdlets to enumerate and switch playback devices.
+       3. Caches device list to `$TEMP/audio_switch_cache.json` for instant startup.
+       4. Dependency:
+          ```
+          Install-Module -Name AudioDeviceCmdlets -Scope CurrentUser
+          ```
+       5. Usage: `python audio_switch.py`
+       6. Features:
+          - Instant startup via cached device list
+          - One-click switch between playback devices
+          - Refresh button to re-enumerate devices
+          - Delete cache button to force re-query on next launch
+
 2. **Javascript**
    1. tampermonkey (Chrome -> Tampermonkey -> Utilities -> Install from URL)
 
