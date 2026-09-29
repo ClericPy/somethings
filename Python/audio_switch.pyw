@@ -8,8 +8,10 @@ Dependency:
 
 Usage:
   .venv/Scripts/python audio_switch.py
+  .venv/Scripts/python audio_switch.py --index=2    # silently switch to device #2 (1-based)
 """
 
+import sys
 import tkinter as tk
 import subprocess
 import threading
@@ -204,11 +206,11 @@ def main():
         for btn in btn_map.values():
             btn.destroy()
         btn_map.clear()
-        for name, dev_id in devices:
+        for i, (name, dev_id) in enumerate(devices, start=1):
             is_current = (dev_id == default_id)
             btn = tk.Button(
                 device_frame,
-                text=f"  {name}  ",
+                text=f"  [{i}] {name}  ",
                 font=FONT,
                 anchor="w",
                 relief="flat",
@@ -287,5 +289,47 @@ def main():
     root.mainloop()
 
 
+def parse_index_arg(argv):
+    """Extract --index=N from argv, return int or None"""
+    prefix = "--index="
+    for arg in argv[1:]:
+        if arg.startswith(prefix):
+            try:
+                return int(arg[len(prefix):])
+            except ValueError:
+                return None
+    return None
+
+
+def switch_by_silent_index(target_idx):
+    """Silently switch to device at target_idx. Tries cache first, then falls back to slow fetch."""
+    # 1. Try cache first for instant switch
+    result = load_cache()
+    # 2. Cache miss → fall back to slow fetch
+    if not result:
+        result = fetch_devices_slow()
+        if result:
+            devices, default_id = result
+            save_cache(devices, default_id)
+    if not result:
+        print("Failed to load audio devices.", file=sys.stderr)
+        sys.exit(1)
+
+    devices, default_id = result
+    # target_idx is 1-based, convert to 0-based
+    target_idx -= 1
+    if target_idx < 0 or target_idx >= len(devices):
+        print(f"Index {target_idx + 1} out of range (1 ~ {len(devices)}).", file=sys.stderr)
+        sys.exit(1)
+
+    name, dev_id = devices[target_idx]
+    print(f"[{target_idx + 1}] Switching to: {name} ({dev_id})")
+    ps_fire(f'Set-AudioDevice -ID "{dev_id}"')
+
+
 if __name__ == "__main__":
-    main()
+    idx = parse_index_arg(sys.argv)
+    if idx is not None:
+        switch_by_silent_index(idx)
+    else:
+        main()
