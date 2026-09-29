@@ -81,6 +81,18 @@ Store some scripts or snippets written by myself. Some GUI apps will build windo
           - Refresh button to re-enumerate devices
           - Delete cache button to force re-query on next launch
 
+    10. dsh-forward
+
+        Forward the `dsh web` GUI from loopback to the LAN, same port and same path, with an optional QR code.
+
+        > Steps:
+        >
+        > 1. cd Python/dsh-forward
+        > 2. uv run --no-project forward.py --launch --qr
+        >
+        > `dsh-forward.bat` does the same in one double-click on Windows. See `Python/dsh-forward/README.md`
+        > for `--trusted-host`, the firewall rule and the security caveats.
+
 2. **Javascript**
    1. tampermonkey (Chrome -> Tampermonkey -> Utilities -> Install from URL)
 

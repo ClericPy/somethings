@@ -132,3 +132,6 @@ dmypy.json
 Downloads/
 temp*
 *.dist/
+
+# dsh-forward 的运行产物：编的是带 token 的局域网 URL，绝不入库
+dsh-qr.png
